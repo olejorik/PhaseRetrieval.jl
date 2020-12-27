@@ -52,6 +52,8 @@ function logrescale(array, α = 5)
     return rescale(log.(10,ret))
 end
 
+"Wrap Phase" phwrap(x::Real) = isnan(x) ? NaN : rem2pi(x, RoundNearest)
+# phwrap(::Val{NaN}) = NaN
 
 function rotationmatrix(α)
     [cos(α) -sin(α); sin(α) cos(α)]
@@ -92,8 +94,27 @@ Create circular aperture in array `xrange × yrange` with diameter `d` and cente
 function aperture(xrange::AbstractRange, yrange::AbstractRange, d, o=(0,0))
     ap = [ ((xc-o[1])^2 + (yc-o[2])^2) <= d^2 /4 ? 1 : 0 for yc ∈ yrange,  xc ∈ xrange]
     # area = +(ap[:]...)
-    phmask = [ (xc^2 + yc^2) <= d^2 /4 ? 1 : NaN for yc ∈ yrange,  xc ∈ xrange]
+    phmask = [ ((xc-o[1])^2 + (yc-o[2])^2) <= d^2 /4 ? 1 : NaN for yc ∈ yrange,  xc ∈ xrange]
     return(ap, phmask)
 end
 
 aperture(dom::CartesianDomain2D, d, o=(0,0)) = aperture(dom.xrange, dom.yrange, d,o)
+
+
+"""
+subdivide_sum(arr,Q)
+
+Divide `arr`ay in `Q × Q` cells and sum the elements with the same indexes in each cell.
+"""
+function subdivide_sum(arr,Q)
+    m,n = size(arr) .÷ Q
+    ret = zeros(eltype(arr), m,n)
+
+        for q in 0:Q^2-1
+            a = q%Q
+            b = q÷Q
+            ret += @view arr[(m*a + 1) : m*(a+1) , (n*b + 1) : n*(b+1)]
+        end
+
+    return ret
+end 

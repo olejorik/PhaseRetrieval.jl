@@ -231,16 +231,6 @@ struct PFPlan
 end
 
 
-struct PDplan
-    plan
-    diversity::Array{<:Number,2}
-end
-
-PDplan(diversity::Array{<:Number,2}) = PDplan(plan_fft(diversity), diversity)
-
-import Base: *
-*(pd::PDplan, a::AbstractMatrix) = pd.plan * (pd.diversity .* a)
-# export Base.:*
 
 
 function upscaleFactor(wfs::SHSensor, apertureD, λ )

@@ -57,4 +57,41 @@ using Test
         3.0  3.5  4.0  4.5  5.0
         4.0  4.5  5.0  5.5  6.0
     ]
+
+    @test PhaseRetrieval.subdivide_sum(ones(10,10),5) == [
+        25.0  25.0
+        25.0  25.0
+    ]
+
+    ap = PhaseRetrieval.aperture(a, 2.5,(3,-0.1))
+    b = phwrap.(ap[2])
+    # b  == [
+    #     NaN  NaN    NaN    NaN    NaN
+    #     NaN  NaN    NaN    NaN    NaN
+    #     NaN  NaN    NaN    NaN    NaN
+    #     NaN  NaN      1.0  NaN    NaN
+    #     NaN    1.0    1.0    1.0  NaN
+    #     NaN    1.0    1.0    1.0  NaN
+    #     NaN    1.0    1.0    1.0  NaN
+    #     NaN  NaN      1.0  NaN    NaN
+    #     NaN  NaN    NaN    NaN    NaN
+    #     NaN  NaN    NaN    NaN    NaN
+    #     NaN  NaN    NaN    NaN    NaN
+    #  ]
+    
+    @test isnan.(b) == [
+        1  1  1  1  1
+        1  1  1  1  1
+        1  1  1  1  1
+        1  1  0  1  1
+        1  0  0  0  1
+        1  0  0  0  1
+        1  0  0  0  1
+        1  1  0  1  1
+        1  1  1  1  1
+        1  1  1  1  1
+        1  1  1  1  1
+    ]
+
+
 end
