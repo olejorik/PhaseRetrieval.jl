@@ -1,7 +1,8 @@
 using PhaseRetrieval
 # using SampledDomains
 import Pkg
-Pkg.add("`https://github.com/olejorik/SampledDomains.jl");
+Pkg.add(url="https://github.com/olejorik/SampledDomains.jl")
+using SampledDomains
 using Test
 
 @testset "utils.jl" begin
