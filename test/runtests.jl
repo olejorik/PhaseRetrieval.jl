@@ -1,4 +1,5 @@
 using PhaseRetrieval
+using SampledDomains
 using Test
 
 @testset "utils.jl" begin
@@ -63,7 +64,8 @@ using Test
         25.0  25.0
     ]
 
-    ap = PhaseRetrieval.aperture(a, 2.5,(3,-0.1))
+    a = SampledDomains.CartesianDomain2D(1:5, -2.5:.5:2.5)
+    ap = PhaseRetrieval.aperture(a, 2.5, (3,-0.1))
     b = phwrap.(ap[2])
     # b  == [
     #     NaN  NaN    NaN    NaN    NaN
@@ -93,5 +95,8 @@ using Test
         1  1  1  1  1
     ]
 
+   a =  PhaseRetrieval.tile(reshape(1:60,(6,10)), 2)
+   @test a[:,:,1] == [ 1 7;2 8] && a[:,:,15] == [53 59; 54 60]
+   
 
 end

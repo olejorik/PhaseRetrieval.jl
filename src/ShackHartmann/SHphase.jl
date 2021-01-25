@@ -1,5 +1,6 @@
 using FFTW
 
+
 # Algorithms to choose
 abstract type Alg end
 "Build SH diversity using the quadratic functions" struct Quadratic <: Alg end

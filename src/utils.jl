@@ -104,7 +104,7 @@ aperture(dom::CartesianDomain2D, d, o=(0,0)) = aperture(dom.xrange, dom.yrange, 
 """
 subdivide_sum(arr,Q)
 
-Divide `arr`ay in `Q × Q` cells and sum the elements with the same indexes in each cell.
+ and sum the elements with the same indexes in each cell.
 """
 function subdivide_sum(arr,Q)
     m,n = size(arr) .÷ Q
@@ -118,3 +118,16 @@ function subdivide_sum(arr,Q)
 
     return ret
 end 
+
+"""
+    tile(arr, Q)
+
+Divide `arr`ay in quadratic cells of size `Q × Q` and stack them along the third dimension.
+"""
+function tile(arr, Q)    
+    m,n = size(arr) .÷ Q
+    B = reshape(arr, (Q,m,Q,n))
+    C = PermutedDimsArray(B,[1,3,2,4])
+    D = reshape(C, (Q,Q,:))
+    
+end
