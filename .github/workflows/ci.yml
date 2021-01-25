@@ -24,8 +24,6 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - name: Install dependencies
-        run: julia -e 'using Pkg; Pkg.develop(PackageSpec(url="https://github.com/olejorik/SampledDomains.jl")); Pkg.instantiate()'
       - uses: actions/cache@v1
         env:
           cache-name: cache-artifacts
@@ -36,6 +34,8 @@ jobs:
             ${{ runner.os }}-test-${{ env.cache-name }}-
             ${{ runner.os }}-test-
             ${{ runner.os }}-
+      - name: Install dependencies
+          run: julia -e 'using Pkg; Pkg.develop(url="https://github.com/olejorik/SampledDomains.jl"); Pkg.instantiate()'
       - uses: julia-actions/julia-buildpkg@latest
       - uses: julia-actions/julia-runtest@latest
       - uses: julia-actions/julia-processcoverage@v1
