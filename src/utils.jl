@@ -52,7 +52,7 @@ function logrescale(array, α = 5)
     return rescale(log.(10,ret))
 end
 
-"Wrap Phase" phwrap(x::Real) = isnan(x) ? NaN : rem2pi(x, RoundNearest)
+"Wrap Phase" phwrap(x::Float64) = isnan(x) ? NaN : rem2pi(x, RoundNearest)
 # phwrap(::Val{NaN}) = NaN
 
 function rotationmatrix(α)
@@ -104,19 +104,23 @@ aperture(dom::CartesianDomain2D, d, o=(0,0)) = aperture(dom.xrange, dom.yrange, 
 """
 subdivide_sum(arr,Q)
 
- and sum the elements with the same indexes in each cell.
+Divide `arr`ay in quadratic cells of size `Q × Q`  and sum the elements with the same indexes in each cell.
 """
 function subdivide_sum(arr,Q)
-    m,n = size(arr) .÷ Q
-    ret = zeros(eltype(arr), m,n)
+    if Q == 1
+        return arr
+    else
+        m,n = size(arr) .÷ Q
+        ret = zeros(eltype(arr), m,n)
 
-        for q in 0:Q^2-1
-            a = q%Q
-            b = q÷Q
-            ret += @view arr[(m*a + 1) : m*(a+1) , (n*b + 1) : n*(b+1)]
-        end
+            for q in 0:Q^2-1
+                a = q%Q
+                b = q÷Q
+                ret += @view arr[(m*a + 1) : m*(a+1) , (n*b + 1) : n*(b+1)]
+            end
 
-    return ret
+        return ret
+    end
 end 
 
 """

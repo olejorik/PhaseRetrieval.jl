@@ -194,9 +194,18 @@ Base.@kwdef struct MLA
 end
 
 Base.@kwdef struct CameraChip
-    pixelsize
-    imagesize
+    pixelsize::Float64
+    imagesize::Tuple{Int64, Int64}
 end
+
+#simple function to redefine the camera size
+"""
+    roi(cam::CameraChip, dims::Tuple)
+
+Create camera that represents ROI of `cam`.
+"""
+roi(cam::CameraChip, dims::Tuple) = CameraChip(cam.pixelsize, min.(cam.imagesize, dims))
+roi(cam::CameraChip, dims::Integer) = roi(cam, (dims, dims))
 
 
 """
