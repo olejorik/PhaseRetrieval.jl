@@ -36,6 +36,17 @@ function rescale(array)
     return (array .- amin) / s
 end
 
+"""
+    rescale_minmax(array)  
+
+Rescale array between 0 and 1 and return the rescaled array and the min, max values
+"""
+function rescale_minmax(array)
+    amin, amax = extrema(array)
+    s = amin ≈ amax ? 1 : amax-amin
+    return (array .- amin) / s, amin, amax
+end
+
 
 
 """
@@ -92,9 +103,9 @@ end
 Create circular aperture in array `xrange × yrange` with diameter `d` and center at `o`.
 """
 function aperture(xrange::AbstractRange, yrange::AbstractRange, d, o=(0,0))
-    ap = [ ((xc-o[1])^2 + (yc-o[2])^2) <= d^2 /4 ? 1 : 0 for yc ∈ yrange,  xc ∈ xrange]
+    ap = [ ((xc-o[1])^2 + (yc-o[2])^2) <= d^2 /4 ? 1. : 0. for yc ∈ yrange,  xc ∈ xrange]
     # area = +(ap[:]...)
-    phmask = [ ((xc-o[1])^2 + (yc-o[2])^2) <= d^2 /4 ? 1 : NaN for yc ∈ yrange,  xc ∈ xrange]
+    phmask = [ ((xc-o[1])^2 + (yc-o[2])^2) <= d^2 /4 ? 1. : NaN for yc ∈ yrange,  xc ∈ xrange]
     return(ap, phmask)
 end
 

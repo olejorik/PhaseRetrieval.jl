@@ -218,10 +218,10 @@ Base.@kwdef struct SHSensor
     mla::MLA
     cam::CameraChip
     distance = mla.focallength
-    mlaorigin = [0,0]
-    α = 0
-    β = 0
-    γ = 0
+    mlaorigin = [0.,0.]
+    α = 0.
+    β = 0.
+    γ = 0.
 end
 
 struct HPPlan
