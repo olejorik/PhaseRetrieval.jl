@@ -139,10 +139,29 @@ end
 
 Divide `arr`ay in quadratic cells of size `Q × Q` and stack them along the third dimension.
 """
-function tile(arr, Q)    
+function tile(arr, Q :: Integer)    
     m,n = size(arr) .÷ Q
     B = reshape(arr, (Q,m,Q,n))
     C = PermutedDimsArray(B,[1,3,2,4])
     D = reshape(C, (Q,Q,:))
     
+end
+
+function tile(arr, Q :: Tuple)    
+    m,n = size(arr) .÷ Q # TODO rewrite for any dimension
+    B = reshape(arr, (Q[1],m,Q[2],n))
+    C = PermutedDimsArray(B,[1,3,2,4])
+    D = reshape(C, (Q[1],Q[2],:))
+    
+end
+
+
+"""
+    subdivide(arr, Q)
+
+Subdivide array of dimension MQ x NQ in Q^2 stacked tiles of size M x N.
+"""
+function subdivide(arr, Q)
+    Q1 = size(arr) .÷ Q 
+    return tile(arr, Q1) 
 end
