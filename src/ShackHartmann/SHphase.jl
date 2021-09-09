@@ -193,20 +193,6 @@ Base.@kwdef struct MLA
     focallength
 end
 
-Base.@kwdef struct CameraChip
-    pixelsize::Float64
-    imagesize::Tuple{Int64, Int64}
-end
-
-#simple function to redefine the camera size
-"""
-    roi(cam::CameraChip, dims::Tuple)
-
-Create camera that represents ROI of `cam`.
-"""
-roi(cam::CameraChip, dims::Tuple) = CameraChip(cam.pixelsize, min.(cam.imagesize, dims))
-roi(cam::CameraChip, dims::Integer) = roi(cam, (dims, dims))
-
 
 """
     Shack-Hartmann sensor composed from MLA and a camera. 
@@ -244,10 +230,7 @@ end
 
 
 function upscaleFactor(wfs::SHSensor, apertureD, λ )
-    s = wfs.cam.pixelsize
-    f = wfs.mla.focallength
-    q = apertureD* s /(f *λ)
-    upscale = ceil(Int,q)
+    upscaleFactor(wfs.cam.pixelsize, wfs.mla.focallength, apertureD, λ )
 end
 
 """

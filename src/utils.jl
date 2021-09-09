@@ -165,3 +165,14 @@ function subdivide(arr, Q)
     Q1 = size(arr) .÷ Q 
     return tile(arr, Q1) 
 end
+
+function upscaleFactor(s, f, apertureD, λ )
+    q = apertureD* s /(f *λ)
+    upscale = ceil(Int,q)
+end
+
+function upscaleFactor(ims::ImagingSensor, λ )
+    upscaleFactor(ims.cam.pixelsize, ims.lens.focallength, ims.lens.aperture, λ )
+end
+
+make_centered_domain2D(ims::ImagingSensor) = make_centered_domain2D(ims.cam.imagesize..., ims.cam.pixelsize)
