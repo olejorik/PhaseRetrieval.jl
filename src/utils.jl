@@ -61,7 +61,7 @@ function logrescale(array, α = 5)
     small = array .< threshold
     ret = copy(array)
     ret[small] .= threshold
-    return rescale(log.(10,ret))
+    return rescale(log10.(ret))
 end
 
 "Wrap Phase" phwrap(x::Float64) = isnan(x) ? NaN : rem2pi(x, RoundNearest)
