@@ -11,3 +11,4 @@ camerasdict["UI2210"] = PhaseRetrieval.CameraChip(pixelsize = 9.9E-3, imagesize 
 
 # Lenses
 lensesdict["F300A25"] = PhaseRetrieval.ImagingLens(300, 25)
+lensesdict["F700A75"] = PhaseRetrieval.ImagingLens(700, 75)
