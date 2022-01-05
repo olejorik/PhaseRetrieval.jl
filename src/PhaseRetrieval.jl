@@ -15,6 +15,7 @@ export removepiston, twinphase
 # export Linear
 
 include("types.jl")
+include("hardware.jl")
 include("utils.jl")
 include("ShackHartmann/SHphase.jl")
 include("PSF.jl")

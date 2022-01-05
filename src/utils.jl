@@ -25,6 +25,24 @@ end
 
 lineararray(xrange::AbstractRange, yrange::AbstractRange, a::Vector, k0=0) = lineararray(xrange,yrange,a...,k0)
 
+"""
+    slopearray(dom::CartesianDomain2D, dx, dy, k0=0) generates linear array defined on the domain such that
+    the total growth in x and y direction is dx and dy.
+"""
+function slopearray(dom::CartesianDomain2D, dx, dy, k0=0)
+    xrange = dom.xrange
+    yrange = dom.yrange
+    kx = dx/ xrange.len
+    ky = dy/ yrange.len
+    return lineararray(xrange, yrange, kx, ky, k0)
+end
+
+function centroid(array)
+    m00 = sum(array)
+    m10 = sum([i*v for (i,v) in enumerate(sum(array, dims=1))])
+    m01 = sum([i*v for (i,v) in enumerate(sum(array, dims=2))])
+    return (m10/m00, m01/m00)
+end
 
 """
     rescale(array)  
@@ -225,6 +243,16 @@ end
 
 function removepiston(ϕ)
     return  ϕ  .- mean(phwrap.(filter(!isnan,ϕ)))
+end
+
+function removetiptilt(ϕ)
+    sy, sx = size(ϕ)
+    dx = diff(ϕ, dims=2)
+    dy = diff(ϕ, dims=1)
+    kx = mean(phwrap.(filter(!isnan,dx)))
+    ky = mean(phwrap.(filter(!isnan,dy)))
+    tiptilt = lineararray(1:sx,1:sy, kx,ky)
+    return  ϕ  .- tiptilt
 end
 
 function twinphase(ϕ)
