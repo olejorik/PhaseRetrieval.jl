@@ -176,6 +176,17 @@ function tile(arr, Q :: Tuple)
     
 end
 
+"""
+    binning(arr, Q)
+
+Downsample  `arr`ay by replacing quadratic cells of size `Q × Q` by summ of its elements
+"""
+function binning(arr, Q :: Integer)    
+    m,n = size(arr) .÷ Q
+    B = reshape(arr, (Q,m,Q,n))
+    reshape(sum(B, dims=(1,3)),m,n) ./ Q^2
+end
+
 
 """
     subdivide(arr, Q)
