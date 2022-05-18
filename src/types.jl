@@ -20,12 +20,13 @@ import Base: *
 
 """
 `CameraChip(pixelsize = p, imagesize = (sizex, sizey), bitdepth = 8` repesent a camera chip with a given pixel size, imagesize,
-and bitdepth. If omitted,  bitdepthi set to 8.
+and bitdepth. If omitted,  bitdepth is set to 8.
 """
 Base.@kwdef struct CameraChip
     pixelsize::Float64
     imagesize::Tuple{Int64, Int64}
     bitdepth::Int = 8
+    channelbitdepth::Int = 8
 end
 
 #simple function to redefine the camera size
@@ -34,7 +35,7 @@ end
 
 Create camera that represents ROI of `cam`.
 """
-roi(cam::CameraChip, dims::Tuple) = CameraChip(cam.pixelsize, min.(cam.imagesize, dims),cam.bitdepth)
+roi(cam::CameraChip, dims::Tuple) = CameraChip(cam.pixelsize, min.(cam.imagesize, dims),cam.bitdepth, cam.channelbitdepth)
 roi(cam::CameraChip, dims::Integer) = roi(cam, (dims, dims))
 
 """Fixed focal length lens"""

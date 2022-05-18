@@ -71,7 +71,7 @@ end
 """
     logrescale(array, α = 5)
 
-Rescale in log-scalse: maximum will correspond to 1, ``10^{-α}`` will correspond to 0.
+Rescale in log-scale: maximum will correspond to 1, ``10^{-α}`` will correspond to 0.
 """
 function logrescale(array, α = 5)
     amin, amax = extrema(array)
