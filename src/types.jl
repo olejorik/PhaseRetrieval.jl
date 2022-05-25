@@ -35,7 +35,8 @@ end
 
 Create camera that represents ROI of `cam`.
 """
-roi(cam::CameraChip, dims::Tuple) = CameraChip(cam.pixelsize, min.(cam.imagesize, dims),cam.bitdepth, cam.channelbitdepth)
+# roi(cam::CameraChip, dims::Tuple) = CameraChip(cam.pixelsize, min.(cam.imagesize, dims),cam.bitdepth, cam.channelbitdepth) # correct approach if we want to limit roi to the hardware
+roi(cam::CameraChip, dims::Tuple) = CameraChip(cam.pixelsize, dims,cam.bitdepth, cam.channelbitdepth) # sometimes this is needed
 roi(cam::CameraChip, dims::Integer) = roi(cam, (dims, dims))
 
 """Fixed focal length lens"""
