@@ -9,12 +9,11 @@ abstract type Alg end
 using ..PhaseRetrieval: lineararray
 
 """
-    SHdiversity(xrange, yrange, e₁, e₂, o)
+    SHdiversity(size, cellsize, celloffset=0, α=0)
 
-Generate SH diversity phase on array `xrange × yrange` with cell based on orthogonal grid
-formed by vectors  `e₁, e₂,` and origin at `o`. 
+Generate SH diversity phase of given overall `size`, `cellsize`, central cell offset and rataion angle. 
 """
-function SHdiversity(size, cellsize, celloffset=0, α=0)
+function SHdiversity(size::Tuple{Int64, Int64}, cellsize, celloffset=0, α=0)
     shd = zeros(size)
     
     # # first generate indexes
@@ -34,10 +33,10 @@ function SHdiversity(size, cellsize, celloffset=0, α=0)
     # Method through MLA phase and global defocus
     # Now for every point in the array take the distance squared to centre of its cell
     # This will construct MLA phase
-    for i in 1:size[1], j in 1:size[2]
-        cellind = ind[i,j,:]
-        cellcentre = centres[(cellind .+ indoffset)...]
-        shd[i,j] = +((([i,j] - cellcentre).^2)...)
+   for i in 1:size[1], j in 1:size[2]
+        # cellind = ind[i,j,:]
+        cellcentre = centres[(ind[i,j,:] .+ indoffset)...]
+        shd[i,j] = +(((float.([i,j]) - cellcentre).^2)...)
     end
         
         
@@ -48,7 +47,7 @@ function SHdiversity(size, cellsize, celloffset=0, α=0)
     return shd        
 end
 
-SHdiversity(size::Real, cellsize, celloffset, α) = SHdiversity((size, size), cellsize, celloffset, α)
+SHdiversity(size::Real, cellsize, args...) = SHdiversity((size, size), cellsize, args...)
 
 function SHdiversity(size, cellsize, celloffset, α, ::Linear)
     shd = zeros(size)
@@ -69,6 +68,12 @@ end
 
 SHdiversity(size::Real, cellsize, celloffset, α, method) = SHdiversity((size,size), cellsize, celloffset, α, method)
 
+"""
+    SHdiversity(xrange, yrange, e₁, e₂, o)
+
+Generate SH diversity phase on array `xrange × yrange` with cell based on orthogonal grid
+formed by vectors  `e₁, e₂,` and origin at `o`. 
+"""
 function SHdiversity(xrange::AbstractRange, yrange::AbstractRange, e₁, e₂, o)
     cellind = indicesmap(xrange, yrange, e₁, e₂,o)
     irange  = UnitRange(extrema(cellind[1])...)
@@ -126,7 +131,7 @@ end
 """
     Generate array of indexes of an orthogonal geometry
 """
-function orthIndexes(arrsize::Tuple, cellsize, gridorigin=0, α=0)
+function orthIndexes(arrsize::Tuple{Int64, Int64}, cellsize, gridorigin::Tuple=(0.,0.), α=0)
     ind = zeros(arrsize...,2)
     R = rotationmatrix(-α)
     x = 1- gridorigin[1] : arrsize[1]- gridorigin[1]
@@ -140,11 +145,11 @@ function orthIndexes(arrsize::Tuple, cellsize, gridorigin=0, α=0)
     return Int64.(ind)
 end
 
-orthIndexes(arrsize::Tuple, cellsize, gridorigin::Real, α=0) =
-    orthIndexes(arrsize, cellsize, (gridorigin, gridorigin), α)
+orthIndexes(arrsize, cellsize, gridorigin::Real, args...) =
+    orthIndexes(arrsize, cellsize, (gridorigin, gridorigin), args...)
 
-orthIndexes(arrsize::Real, cellsize, gridorigin, α=0) =
-    orthIndexes((arrsize,arrsize), cellsize, gridorigin, α)
+orthIndexes(arrsize::Int64, cellsize, args...) =
+    orthIndexes((arrsize,arrsize), cellsize, args...)
 
 # this implementation appears to be quite slow
 # function orthIndexes(arrsize, cellsize, gridorigin=0, α=0)

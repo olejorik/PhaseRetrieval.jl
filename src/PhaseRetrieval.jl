@@ -1,5 +1,5 @@
 module PhaseRetrieval
-# using LinearAlgebra
+using LinearAlgebra
 using Statistics
 using FFTW
 using SampledDomains: CartesianDomain2D, dualRange
