@@ -263,7 +263,7 @@ function removetiptilt(ϕ)
     kx = mean(phwrap.(filter(!isnan,dx)))
     ky = mean(phwrap.(filter(!isnan,dy)))
     tiptilt = lineararray(1:sx,1:sy, kx,ky)
-    return  ϕ  .- tiptilt
+    return  phwrap.(ϕ  .- tiptilt)
 end
 
 function twinphase(ϕ)
