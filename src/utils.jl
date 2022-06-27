@@ -82,7 +82,7 @@ function logrescale(array, α = 5)
     return rescale(log10.(ret))
 end
 
-"Wrap Phase" phwrap(x::Float64) = isnan(x) ? NaN : rem2pi(x, RoundNearest)
+"Wrap Phase" phwrap(x::AbstractFloat) = isnan(x) ? NaN : rem2pi(x, RoundNearest)
 # phwrap(::Val{NaN}) = NaN
 
 function rotationmatrix(α)
