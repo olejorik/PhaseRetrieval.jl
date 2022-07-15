@@ -10,7 +10,7 @@ using AlternatingProjections
 
 export SHdiversity
 export psf, phwrap, subpsf
-export removepiston, twinphase
+export removepiston, removetiptilt, twinphase
 
 # export Linear
 
