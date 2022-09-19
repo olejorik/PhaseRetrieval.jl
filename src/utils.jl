@@ -52,7 +52,7 @@ Rescale array between 0 and 1
 function rescale(array)
     amin, amax = extrema(array)
     s = amin ≈ amax ? 1 : amax-amin
-    return (array .- amin) / s
+    return (array .- amin) / Float64(s)
 end
 
 """
@@ -256,10 +256,24 @@ function removepiston(ϕ)
     return  ϕ  .- mean(phwrap.(filter(!isnan,ϕ)))
 end
 
+function removepiston(ϕ, mask)
+    return  ϕ  .- mean(phwrap.(filter(!isnan, ϕ .* mask)))
+end
+
 function removetiptilt(ϕ)
     sy, sx = size(ϕ)
     dx = diff(ϕ, dims=2)
     dy = diff(ϕ, dims=1)
+    kx = mean(phwrap.(filter(!isnan,dx)))
+    ky = mean(phwrap.(filter(!isnan,dy)))
+    tiptilt = lineararray(1:sx,1:sy, kx,ky)
+    return  phwrap.(ϕ  .- tiptilt)
+end
+
+function removetiptilt(ϕ, mask)
+    sy, sx = size(ϕ)
+    dx = diff(ϕ .* mask, dims=2)
+    dy = diff(ϕ .* mask, dims=1)
     kx = mean(phwrap.(filter(!isnan,dx)))
     ky = mean(phwrap.(filter(!isnan,dy)))
     tiptilt = lineararray(1:sx,1:sy, kx,ky)
