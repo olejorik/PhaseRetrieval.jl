@@ -11,8 +11,8 @@ DocMeta.setdocmeta!(PhaseRetrieval, :DocTestSetup, :(using PhaseRetrieval); recu
 makedocs(;
     modules=[PhaseRetrieval],
     authors="Oleg Soloviev",
-    repo="https://github.com/olejorik/PhaseRetrieval.jl/blob/{commit}{path}#L{line}",
-    sitename="PhaseRetrieval.jl",
+    # repo="https://github.com/olejorik/PhaseRetrieval.jl/blob/{commit}{path}#L{line}",
+    # sitename="PhaseRetrieval.jl",
     # format=Documenter.HTML(;
         # prettyurls=get(ENV, "CI", "false") == "true",
         # canonical="https://olejorik.github.io/PhaseRetrieval.jl",
