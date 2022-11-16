@@ -11,7 +11,7 @@ using ..PhaseRetrieval: lineararray
 """
     SHdiversity(size, cellsize, celloffset=0, α=0)
 
-Generate SH diversity phase of given overall `size`, `cellsize`, central cell offset and rataion angle. 
+Generate SH diversity phase of given overall `size`, `cellsize`, central cell `offset` and rotation angle `α`. 
 """
 function SHdiversity(size::Tuple{Int64, Int64}, cellsize, celloffset=0, α=0)
     shd = zeros(size)
