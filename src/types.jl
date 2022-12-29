@@ -19,7 +19,7 @@ import Base: *
 # export Base.:*
 
 """
-`CameraChip(pixelsize = p, imagesize = (sizex, sizey), bitdepth = 8` repesent a camera chip with a given pixel size, imagesize,
+`CameraChip(pixelsize = p, imagesize = (sizex, sizey), bitdepth = 8, channelbitdepth = 8` repesent a camera chip with a given pixel size, imagesize,
 and bitdepth. If omitted,  bitdepth is set to 8.
 """
 Base.@kwdef struct CameraChip
