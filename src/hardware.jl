@@ -1,10 +1,10 @@
 # dictionaries with typical harware for ease of use with experimental data
 
 const m = 1
-const mm = 10e-3
-const um = 10e-6
-const μm = 10e-6
-const nm = 10-9
+const mm = 1e-3
+const um = 1e-6
+const μm = 1e-6
+const nm = 1-9
 
 camerasdict = Dict()
 lensesdict = Dict()

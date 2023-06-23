@@ -1,8 +1,12 @@
 using Pkg
-cd(@__DIR__)
-Pkg.activate(".")
-push!(LOAD_PATH,"../src/")
+Pkg.develop(PackageSpec(path=pwd()))
+Pkg.instantiate()
+# cd(@__DIR__)
+# Pkg.activate(".")
+# push!(LOAD_PATH,"../src/")
 using PhaseRetrieval
+@show mm
+@show PhaseRetrieval.aperture
 using Documenter
 
 DocMeta.setdocmeta!(PhaseRetrieval, :DocTestSetup, :(using PhaseRetrieval); recursive=true)
