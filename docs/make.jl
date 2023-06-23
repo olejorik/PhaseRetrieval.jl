@@ -5,8 +5,7 @@
 # Pkg.activate(".")
 # push!(LOAD_PATH,"../src/")
 using PhaseRetrieval
-@show mm
-@show PhaseRetrieval.aperture
+@show mm # just to test that the package is loaded
 using Documenter
 
 DocMeta.setdocmeta!(PhaseRetrieval, :DocTestSetup, :(using PhaseRetrieval); recursive=true)
