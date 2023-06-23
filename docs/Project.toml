@@ -1,5 +1,4 @@
 [deps]
 AlternatingProjections = "37589ef0-cc9c-11e9-2e35-d5d8b7f5a2df"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-PhaseRetrieval = "223879fc-9d59-4b08-8977-2bca214a0849"
 SampledDomains = "a82262f3-35bb-4fed-9e1b-5653a3e90076"
