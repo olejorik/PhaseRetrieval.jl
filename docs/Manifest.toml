@@ -22,7 +22,7 @@ weakdeps = ["ChainRulesCore"]
 [[deps.AlternatingProjections]]
 deps = ["FFTW", "LinearAlgebra", "Roots"]
 git-tree-sha1 = "0a813d5d8e10dc5660483de353fcb4d99d44710b"
-repo-rev = "master"
+repo-rev = "develop"
 repo-url = "https://github.com/olejorik/AlternatingProjections.jl"
 uuid = "37589ef0-cc9c-11e9-2e35-d5d8b7f5a2df"
 version = "0.1.0"
