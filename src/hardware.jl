@@ -4,7 +4,7 @@ const m = 1
 const mm = 1e-3
 const um = 1e-6
 const μm = 1e-6
-const nm = 1-9
+const nm = 1e-9
 
 camerasdict = Dict()
 lensesdict = Dict()

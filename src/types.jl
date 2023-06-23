@@ -47,6 +47,21 @@ end
 
 """
 Imaging sensor or camera consists of a lens and camera chip.
+
+Create a sensor using keyword syntaxis (in any order), `lens` and `cam` are required
+```
+ims = ImagingSensor(lens = ::ImagingLens, cam = ::CameraChip)
+```
+
+Other possible keywords to simulate misalingnment^
+```
+    focal_distance (= lens.focallength  by default)
+    lensorigin = [0.,0.] # aka nodal point, but expressed in length units
+    # misalingment parameters (not realised yet, set ot zero)
+    α = 0.
+    β = 0.
+    γ = 0.
+````
 """
 Base.@kwdef struct ImagingSensor
     lens::ImagingLens
