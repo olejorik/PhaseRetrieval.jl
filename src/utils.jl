@@ -208,7 +208,7 @@ function upscaleFactor(ims::ImagingSensor, λ )
 end
 
 make_centered_domain2D(ims::ImagingSensor) = make_centered_domain2D(ims.cam.imagesize..., ims.cam.pixelsize)
-
+make_centered_domain2D(hw::hwConfig) = make_centered_domain2D(hw.cam.imagesize..., hw.cam.pixelsize)
 
 
 
