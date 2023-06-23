@@ -1,6 +1,6 @@
-using Pkg
-Pkg.develop(PackageSpec(path=pwd()))
-Pkg.instantiate()
+# using Pkg
+# Pkg.develop(PackageSpec(path=pwd()))
+# Pkg.instantiate()
 # cd(@__DIR__)
 # Pkg.activate(".")
 # push!(LOAD_PATH,"../src/")
