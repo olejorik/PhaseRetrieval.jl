@@ -16,16 +16,21 @@ This package is devoted to the forward and inverse problems of Phase Retrieval (
 
 ## Basic usage
 ### Forward model 
-Let's set up a simulation environment matching the following hardware set up: a beam with a footprint of 10 mm diameter is focused with a lens of 300 mm focal length and the PSF is registered with UI-1540 camera, which we combine in one structure called [`ImagingSensor`](@ref)
+
+For the PR problem, forward model is simulation of a realistic readout of a camera of a PSF (or an extended object) under some predefined conditions.
+
+Let's set up a simulation environment matching the following hardware set up: a beam with a footprint of 1 inch (25 mm) diameter is focused with a lens of 300 mm focal length and the PSF is registered with [UI-1240 camera](https://en.ids-imaging.com/store/products/cameras/ui-1240le.html).
+For both lens and camera, we can use structures with self-explanatory names
+[`ImagingLens`](@ref) and [`CameraChip`](@ref), which we combine in one structure called [`ImagingSensor`](@ref):
 
 ```@example psf
 using PhaseRetrieval
 lens = PhaseRetrieval.ImagingLens(300mm, 25mm)
-cam = PhaseRetrieval.CameraChip(pixelsize = 5.2um, imagesize = (1280, 1024), bitdepth = 8, channelbitdepth = 8)
+cam = PhaseRetrieval.CameraChip(pixelsize = 5.3um, imagesize = (1280, 1024), bitdepth = 8, channelbitdepth = 8)
 ims = PhaseRetrieval.ImagingSensor(lens = lens, cam = cam)
 ```
 
-Now we can save all these definitions in a simulation config
+Now we can save all these definitions in a simulation config [`SimConfig`](@ref). We also specify the wavelength here:
 ```@example psf
 conf1 = SimConfig("full_aperture", ims, 633nm)
 ```
@@ -39,7 +44,7 @@ heatmap(rotr90(p[503:523,631:651]), axis = (aspect = DataAspect(), ))
 ```
 Indeed, the Airy pattern should be about 9 microns wide
 ```@example psf
-print("Airy size is 1.22λ/NA = ",  1.22*632nm *300mm/25mm /um, " μm")
+print("Airy size is 1.22λ/NA = ",  1.22*632nm *conf1.f/conf1.d /um, " μm")
 ```
 
 We might thus want to consider a smaller numerical aperture:
@@ -54,13 +59,13 @@ heatmap(rotr90(p2[503:523,631:651]), axis = (aspect = DataAspect(), ))
 
 
 #### Faster creation of an `ImagingSensor`
-Some often used cameras are saved in [`camerasdict`](@ref) dictionary
+Some often used cameras are saved in [`camerasdict`](@ref) and [`lensesdict`](@ref) dictionaries
 ```@example psf
 keys(camerasdict)
 ```
 So the imaging sensor can be created as 
 ```@example psf
-ims = ImagingSensor(cam = cam, lens = lensesdict["F300A25"])
+ims = ImagingSensor(cam = cam = camerasdict["UI1240"], lens = lensesdict["F300A25"])
 ```
 
 #### `SimConfig`

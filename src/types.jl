@@ -99,6 +99,26 @@ end
 """
 hwConfig(s::String, f, λ, d) = hwConfig(PhaseRetrieval.camerasdict[s], f, λ, d)
 
+"""
+    SimConfig(name::String, ims::PhaseRetrieval.ImagingSensor, λ::Float64) creates forward-model 
+    simulation environment for the PR problem obtained with  `ims` image sensor (camera + lens) at 
+        wavelength `λ`. `name` is a sting identifacator used for, for instace, plotting labels.
+
+`SimConfig` contains the following fields:
+    ```julia
+    name::String
+    ims::PhaseRetrieval.ImagingSensor
+    f::Float64
+    λ::Float64
+    d::Float64
+    q::Int
+    roi::CartesianDomain2D
+    dualroi::CartesianDomain2D
+    ap::Array{Float64,2}
+    mask::Array{Float64,2}
+    ````
+
+"""
 struct SimConfig
     name::String
     ims::PhaseRetrieval.ImagingSensor
@@ -112,6 +132,7 @@ struct SimConfig
     mask::Array{Float64,2}
     # diversity::Array{Float64,2} # not implemented
 end
+
 
 function SimConfig(name::String, ims::PhaseRetrieval.ImagingSensor, λ::Float64)
     q = PhaseRetrieval.upscaleFactor(ims, λ)
