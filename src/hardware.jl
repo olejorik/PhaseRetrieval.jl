@@ -6,7 +6,18 @@ const um = 1e-6
 const μm = 1e-6
 const nm = 1e-9
 
+"""
+    `camerasdict` is a dictionary with often used cameras.
+
+Use `keys(camerasdict)` to get the list of implemented cameras.
+"""
 camerasdict = Dict()
+
+"""
+    `lensesdict` is a dictionary with often used cameras.
+
+Use `keys(lensesdict)` to get the list of implemented cameras.
+"""
 lensesdict = Dict()
 
 
@@ -22,55 +33,6 @@ camerasdict["MC203MG"] = PhaseRetrieval.CameraChip(pixelsize = 2.74um, imagesize
 lensesdict["F300A25"] = PhaseRetrieval.ImagingLens(300mm, 25mm)
 lensesdict["F700A75"] = PhaseRetrieval.ImagingLens(700mm, 75mm)
 
-Base.@kwdef struct hwConfig
-    cam::PhaseRetrieval.CameraChip
-    f::Float64
-    λ::Float64
-    d::Float64
-end
 
-"""
-    hwConfig(s::String, f, λ, d) creates a hardware configuration with
-    `s` camera, lens with a focal length `f` and aperture `d` and using wavelenght
-    `λ`.
 
-## Example
-
-    conf1 = hwConfig("UI1540", 300mm, 633nm,25mm) creates a configuration
-    based on UI-1540 camera, with a 1 inch lens with focal length 300mm and He-Ne laser. 
-"""
-hwConfig(s::String, f, λ, d) = hwConfig(PhaseRetrieval.camerasdict[s], f, λ, d)
-
-struct SimConfig
-    name::String
-    ims::PhaseRetrieval.ImagingSensor
-    f::Float64
-    λ::Float64
-    d::Float64
-    q::Int
-    roi::CartesianDomain2D
-    dualroi::CartesianDomain2D
-    ap::Array{Float64,2}
-    mask::Array{Float64,2}
-    # diversity::Array{Float64,2} # not implemented
-end
-
-function SimConfig(name::String, ims::PhaseRetrieval.ImagingSensor, λ::Float64)
-    q = PhaseRetrieval.upscaleFactor(ims, λ)
-    f = ims.lens.focallength
-    d = ims.lens.aperture
-    roi = make_centered_domain2D(ims)
-    dualroi = dualDomain(roi, q) * f * λ
-    ap, mask = aperture(dualroi, d)
-    return SimConfig(name, ims, f, λ, d, q, roi, dualroi, ap, mask)
-end
-
-function SimConfig(name::String, hw::hwConfig)
-    ims = ImagingSensor(
-        lens = ImagingLens(hw.f, hw.d),
-        cam = hw.cam)
-    λ = hw.λ
-    return SimConfig(name, ims,  λ)
-end
-
-export hwConfig, SimConfig, m, mm, um, μm, nm
+export camerasdict, lensesdict, m, mm, um, μm, nm
