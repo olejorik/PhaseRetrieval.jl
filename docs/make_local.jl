@@ -1,5 +1,6 @@
 using Pkg
-Pkg.add(url = "https://github.com/olejorik/AlternatingProjections.jl", rev= "develop"); Pkg.add(url = "https://github.com/olejorik/SampledDomains.jl");
+Pkg.add(url = "https://github.com/olejorik/AlternatingProjections.jl", rev= "develop"); 
+Pkg.add(url = "https://github.com/olejorik/SampledDomains.jl");
 Pkg.develop(PackageSpec(path=pwd()))
 Pkg.instantiate()
 # cd(@__DIR__)

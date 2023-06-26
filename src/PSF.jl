@@ -35,7 +35,7 @@ subpsf(field::AbstractArray,Q::Integer) = psf(subdivide_sum(field,Q))
 subpsf(amplitude, phase,Q::Integer) = psf(subdivide_sum(field(amplitude, phase),Q))
 
 
-toimageplane(field) = ifftshift(fft(fftshift(field)))
+toimageplane(field) = fftshift(fft(ifftshift(field)))
 
 
 

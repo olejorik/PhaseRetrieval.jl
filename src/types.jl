@@ -57,7 +57,7 @@ Other possible keywords to simulate misalingnment
 ```
     focal_distance (= lens.focallength  by default)
     lensorigin = [0.,0.] # aka nodal point, but expressed in length units
-    # misalingment parameters (not realised yet, set ot zero)
+    # misalingment parameters (not realised yet, set to zero)
     α = 0.
     β = 0.
     γ = 0.
@@ -68,7 +68,7 @@ Base.@kwdef struct ImagingSensor
     cam::CameraChip
     focal_distance = lens.focallength # 
     lensorigin = [0.,0.] # aka nodal point, but expressed in length units
-    # misalingment parameters (not realised yet, set ot zero)
+    # misalingment parameters (not realised yet, set to zero)
     α = 0.
     β = 0.
     γ = 0.
@@ -132,4 +132,5 @@ function SimConfig(name::String, hw::hwConfig)
 end
 
 
-export hwConfig, SimConfig
+export hwConfig, SimConfig, ImagingSensor
+
