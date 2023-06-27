@@ -6,7 +6,7 @@
 # push!(LOAD_PATH,"../src/")
 using PhaseRetrieval
 @show mm # just to test that the package is loaded
-using Documenter
+using Documenter, Literate
 
 DocMeta.setdocmeta!(PhaseRetrieval, :DocTestSetup, :(using PhaseRetrieval); recursive=true)
 
