@@ -10,6 +10,14 @@ using Documenter
 
 DocMeta.setdocmeta!(PhaseRetrieval, :DocTestSetup, :(using PhaseRetrieval); recursive=true)
 
+# TODO Generate tutorials from literate files
+@info "current dir =$(@__DIR__)"
+tutorials_folder = (@__DIR__) * "/../tutorials"
+docs_folder = (@__DIR__) * "/src"
+@info tutorials_folder
+for f in readdir(tutorials_folder; join=true)
+    Literate.markdown(f, docs_folder)
+end
 
 makedocs(;
     modules=[PhaseRetrieval],
@@ -17,24 +25,23 @@ makedocs(;
     repo="https://github.com/olejorik/PhaseRetrieval.jl/blob/{commit}{path}#L{line}",
     sitename="PhaseRetrieval.jl",
     # format=Documenter.HTML(;
-        # prettyurls=get(ENV, "CI", "false") == "true",
-        # canonical="https://olejorik.github.io/PhaseRetrieval.jl",
-        # assets=String[],
+    # prettyurls=get(ENV, "CI", "false") == "true",
+    # canonical="https://olejorik.github.io/PhaseRetrieval.jl",
+    # assets=String[],
     # ),
-    format = Documenter.HTML(
+    format=Documenter.HTML(;
         # Use clean URLs, unless built as a "local" build
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical = "https://olejorik.github.io/PhaseRetrieval.jl/stable/",
-        assets = ["assets/favicon.ico"],
-        highlights = ["yaml"],
+        canonical="https://olejorik.github.io/PhaseRetrieval.jl/stable/",
+        assets=["assets/favicon.ico"],
+        highlights=["yaml"],
     ),
-    clean = false,
+    clean=false,
     pages=[
         "Home" => "index.md",
+        "About" => "about.md",
+        "Getting Started" => ["Forward model" => "Forward.md"],
     ],
 )
 
-deploydocs(;
-    repo="github.com/olejorik/PhaseRetrieval.jl.git",
-    target = "build",
-)
+deploydocs(; repo="github.com/olejorik/PhaseRetrieval.jl.git", target="build")
