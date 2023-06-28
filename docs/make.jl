@@ -40,7 +40,11 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "About" => "about.md",
-        "Getting Started" => ["Forward model" => "Forward.md"],
+        "Getting Started" => ["Forward model" => "Forward.md",  
+            "Inverse Problem" => 
+                ["Gonsalves's method" =>"Gonsalves.md"]
+                ]
+                ,
     ],
 )
 

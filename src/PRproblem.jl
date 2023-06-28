@@ -16,7 +16,7 @@ struct PRproblem{T <: Real, N} <: AbstractPRproblem
 end
 
 # this problem can be converted to a feasibility problem
-TwoSetsFP(pr::PRproblem) = TwoSetsFP(ConstrainedByAmplitude(pr.a), FourierTransformedSet(ConstrainedByAmplitude(pr.A)))
+TwoSetsFP(pr::PRproblem) = TwoSetsFP(ConstrainedByAmplitude(pr.a), FourierTransformedSet(ConstrainedByShape(pr.A)))
 
 # methods to solve
 """
