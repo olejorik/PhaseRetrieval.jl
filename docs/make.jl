@@ -13,10 +13,10 @@ DocMeta.setdocmeta!(PhaseRetrieval, :DocTestSetup, :(using PhaseRetrieval); recu
 # TODO Generate tutorials from literate files
 @info "current dir =$(@__DIR__)"
 tutorials_folder = (@__DIR__) * "/../tutorials"
-docs_folder = (@__DIR__) * "/src"
+docs_tutorials_folder = (@__DIR__) * "/src/tutorials"
 @info tutorials_folder
 for f in readdir(tutorials_folder; join=true)
-    Literate.markdown(f, docs_folder)
+    Literate.markdown(f, docs_tutorials_folder)
 end
 
 makedocs(;
@@ -40,9 +40,11 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "About" => "about.md",
-        "Getting Started" => ["Forward model" => "Forward.md",  
-            "Inverse Problem" => 
-                ["Gonsalves's method" =>"Gonsalves.md"]
+        "Getting Started" => [
+            "Forward model" => "tutorials/Forward.md",  
+            "Inverse Problem" => [
+                "Gonsalves's method" =>"tutorials/Gonsalves.md"
+                    ]
                 ]
                 ,
     ],

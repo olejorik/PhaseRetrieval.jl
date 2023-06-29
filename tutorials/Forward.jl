@@ -14,11 +14,11 @@
 # [`ImagingLens`](@ref) and [`CameraChip`](@ref), which we combine in one structure called [`ImagingSensor`](@ref):
 
 using PhaseRetrieval
-lens = PhaseRetrieval.ImagingLens(300mm, 25mm)
-cam = PhaseRetrieval.CameraChip(;
+lens = ImagingLens(300mm, 25mm)
+cam = CameraChip(;
     pixelsize=5.3um, imagesize=(1280, 1024), bitdepth=8, channelbitdepth=8
 )
-ims = PhaseRetrieval.ImagingSensor(; lens=lens, cam=cam)
+ims = ImagingSensor(lens=lens, cam=cam)
 
 # Now we can save all these definitions in a simulation config [`SimConfig`](@ref). We also specify the wavelength here:
 
@@ -62,9 +62,13 @@ fieldnames(typeof(conf2))
 using PhasePlots
 showarray(conf2.ap)
 
-# The dimensions of the mask correspond to the dimensions of the sampled image plane, but the overall size corresponds to the inverse of the pixel size. This information is contained in `dualroi` field and can be used to construct the Zernike basis.
+# The dimensions of the mask correspond to the dimensions of the sampled image plane, 
+# but the overall size corresponds to the inverse of the pixel size. 
+# This information is contained in `dualroi` field and can be used to construct the Zernike basis.
 
 conf2.dualroi
+
+# This can be used to create the Zernike basis
 
 using PhaseBases
 basis = ZernikeBW(conf2.dualroi, conf2.d, 10);
