@@ -130,7 +130,7 @@ showphasetight(fftshift(angle.(sol[1])) .* conf2.mask); current_figure()
 # sol = solve(pr, (DRAPparam(β = 0.9,keephistory = true, maxit =1500), APparam(maxϵ = 0.001)))
 # showphasetight(fftshift(angle.(sol[1])) .* conf2.mask); current_figure()
 # ```
-# ![Output after 1500 iterations](assets/PR_DRAP1500.png)
+# ![Output after 1500 iterations](../assets/PR_DRAP1500.png)
 
 #  The phase is perfectly reconstructed now, and 
 #  so here is the main problem of the AP-based PR algorthms --- they require quite
