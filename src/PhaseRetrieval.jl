@@ -4,6 +4,7 @@ using Statistics
 using FFTW
 using SampledDomains: CartesianDomain2D, dualRange, dualDomain
 import SampledDomains: make_centered_domain2D
+using ImageCore
 
 import AlternatingProjections: Problem, Algorithm, solve, TwoSetsFP, IterativeAlgorithm, initial, tolerance, maxit, keephistory, snapshots # these we will need to change
 using AlternatingProjections

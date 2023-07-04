@@ -17,7 +17,9 @@ end
 
 ```@contents
 Pages = [
-        "Forward.md"]
+        "tutorials/Forward.md",
+        tutorials/Inverse.md"
+        ]
 ]
 Depth = 3
 ```

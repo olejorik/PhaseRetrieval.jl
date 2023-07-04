@@ -13,7 +13,7 @@ const nm = 1e-9
 Create a camera chip with a given square pixel size and image size.
 
 You can also specify the bit depth of the camera and the channel bit
-depth. For instance, 12-bit camera (1bitdepth =12`) often transfer its measurement packed
+depth. For instance, 12-bit camera (`bitdepth =12`) often transfer its measurement packed
 in 16-bit number (`channelbitdepth = 16`).
 
 # Arguments
@@ -51,7 +51,7 @@ ROI can be larger than the camera size! :-)
 
  - `cam`: camera (`CameraChip`) or imaging sensor (`ImagingSensor`)
  - `dims::Tuple{Int, Int}`: new (width, height) of the image. 
-    Single number defines a suare ROI.
+    Single number defines a square ROI.
 """
 roi(cam::CameraChip, dims::Tuple{Int, Int}) = CameraChip(cam.pixelsize, dims,cam.bitdepth, cam.channelbitdepth) # sometimes this is needed
 roi(cam::CameraChip, dims::Integer) = roi(cam, (dims, dims))
