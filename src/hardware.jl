@@ -16,6 +16,10 @@ You can also specify the bit depth of the camera and the channel bit
 depth. For instance, 12-bit camera (`bitdepth =12`) often transfer its measurement packed
 in 16-bit number (`channelbitdepth = 16`).
 
+If called on a complex field, output the image seen by the chip.
+
+See also `storagetype`, `intensity`.
+
 # Arguments
  - `pixelsize::Float64`: size of the pixel. Only square pixels are supported.
  - `imagesize::Tuple{Int, Int}`: (width, height) of the image.
@@ -29,6 +33,37 @@ Arguments can be specified in any order.
 cam = CameraChip(;
     pixelsize=5.3um, imagesize=(1280, 1024), bitdepth=8, channelbitdepth=8
 )
+```
+
+```jldoctest
+julia> ap,_ = PhaseRetrieval.aperture(-1:.25:1,-1:.25:1,.8); ap
+9×9 Matrix{Float64}:
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  1.0  1.0  1.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  1.0  1.0  1.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  1.0  1.0  1.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+
+julia> imf = PhaseRetrieval.toimageplane(ap);
+
+julia> cam = camerasdict["UI3860"];
+
+julia> cam(imf, AutoExposure(.7)) |> collect
+9×9 Array{N4f12,2} with eltype FixedPointNumbers.N4f12:
+ 0.0051  0.0  0.0122  0.0427  0.0601  0.0427  0.0122  0.0  0.0051
+ 0.0     0.0  0.0     0.0     0.0     0.0     0.0     0.0  0.0
+ 0.0122  0.0  0.0286  0.1006  0.1411  0.1006  0.0286  0.0  0.0122
+ 0.0427  0.0  0.1006  0.3553  0.4987  0.3553  0.1006  0.0  0.0427
+ 0.0601  0.0  0.1411  0.4987  0.6999  0.4987  0.1411  0.0  0.0601
+ 0.0427  0.0  0.1006  0.3553  0.4987  0.3553  0.1006  0.0  0.0427
+ 0.0122  0.0  0.0286  0.1006  0.1411  0.1006  0.0286  0.0  0.0122
+ 0.0     0.0  0.0     0.0     0.0     0.0     0.0     0.0  0.0
+ 0.0051  0.0  0.0122  0.0427  0.0601  0.0427  0.0122  0.0  0.0051
+
 ```
 
 """
@@ -56,6 +91,35 @@ ROI can be larger than the camera size! :-)
 roi(cam::CameraChip, dims::Tuple{Int, Int}) = CameraChip(cam.pixelsize, dims,cam.bitdepth, cam.channelbitdepth) # sometimes this is needed
 roi(cam::CameraChip, dims::Integer) = roi(cam, (dims, dims))
 # roi(cam::CameraChip, dims::Tuple) = CameraChip(cam.pixelsize, min.(cam.imagesize, dims),cam.bitdepth, cam.channelbitdepth) # correct approach if we want to limit roi to the hardware
+
+
+"""
+    storagetype[(bitdepth,channelbitdepth)]
+
+Get the storage type returned by the combination of the bit depth and storage depth.
+"""
+const storagetype = (;
+    :b8c8 => N0f8,
+    :b8c16 => N8f8,
+    :b10c16 => N6f10,
+    :b12c16 => N4f12,
+    :b14c16 => N2f14,
+    :b16c16 => N0f16
+)
+
+storagetypefun(::Val{8},::Val{8}) = N0f8
+storagetypefun(::Val{8},::Val{16}) = N0f16
+storagetypefun(::Val{10},::Val{16}) = N6f10
+storagetypefun(::Val{12},::Val{16}) = N4f12
+storagetypefun(::Val{14},::Val{16}) = N2f114
+storagetypefun(::Val{16},::Val{16}) = N0f16
+
+"""
+    getstoragetype(cam::CameraChip)
+
+Get the storage type returned by the camera `cam`.
+"""
+getstoragetype(cam::CameraChip) = storagetypefun(Val(cam.bitdepth),Val(cam.channelbitdepth))
 
 """
     ImagingLens(;focallength, aperture)

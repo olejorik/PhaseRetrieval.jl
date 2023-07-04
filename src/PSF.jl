@@ -14,6 +14,15 @@ struct Fourier <: PSFmethod end
 struct ChirpZ <: PSFmethod end
 struct MVM <: PSFmethod end
 
+abstract type PSFExposure end
+struct AutoExposure <:PSFExposure
+    scale::Float64
+end
+
+AutoExposure() = AutoExposure(1)
+
+export AutoExposure
+
 field(amplitude, phase) = amplitude .* exp.( 1im * phase)
 
 """
@@ -126,7 +135,13 @@ julia> PhaseRetrieval.intensity(imf) .|> round
 """
 intensity(field) = mappedarray(abs2,field)
 
-
+function (cam::CameraChip)(field, exposure::PSFExposure = AutoExposure()) 
+    imf = intensity(field)
+    maxint = maximum(imf) / exposure.scale
+    storagetype = getstoragetype(cam)
+    # storagetype = N4f12 #debug -- it's three times faster comapred with the unnknown type
+    return mappedarray(scaleminmax(storagetype,0,maxint), imf)
+end
 
 
 
