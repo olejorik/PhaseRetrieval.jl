@@ -43,7 +43,7 @@ makedocs(;
         "Getting Started" => [
             "Forward model" => "tutorials/Forward.md",  
             "Inverse Problem" => [
-                "Introduction" =>"tutorials/Inverse.md", 
+                "Introduction" =>"Inverse.md", 
                 "Gonsalves's method" =>"tutorials/Gonsalves.md"
                     ]
                 ]
