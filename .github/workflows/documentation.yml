@@ -17,6 +17,8 @@ jobs:
         with:
           version: '1.9'
       - uses: julia-actions/cache@v1
+        with:
+          cache-compiled: "true"
       - name: Install dependencies
         run: |
           julia --project=docs -e '
