@@ -40,11 +40,13 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "About" => "about.md",
-        "Getting Started" => [
-            "Forward model" => "tutorials/Forward.md",  
+        "Getting Started" => "tutorials/GettingStarted.md",
+        "Manual" => [
+            "Forward model" => "tutorials/Hardware.md",  
             "Inverse Problem" => [
                 "Introduction" =>"Inverse.md", 
-                "Gonsalves's method" =>"tutorials/Gonsalves.md"
+                "Gonsalves's method" =>"tutorials/Gonsalves.md",                
+                "AP-based methods" =>"tutorials/AP.md"
                     ]
                 ]
                 ,

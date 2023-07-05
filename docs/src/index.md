@@ -8,27 +8,31 @@ end
 
 # PhaseRetrieval.jl Documentation
 
-```@contents
-```
-
-
-
-## Manual Outline
 
 ```@contents
+
 Pages = [
-        "tutorials/Forward.md",
-        tutorials/Inverse.md"
-        ]
-]
+        "index.md",
+        "about.md",
+        "tutorials/GettingStarted.md",
+        "tutorials/Hardware.md",  
+        "Inverse.md", 
+        "tutorials/Gonsalves.md",                
+        "tutorials/AP.md",
+    ]
 Depth = 3
 ```
+
+
+
+
 
 
 ## Types and Functions
 
 ```@autodocs
 Modules = [PhaseRetrieval]
+Private = false
 ```
 
 ## Index
