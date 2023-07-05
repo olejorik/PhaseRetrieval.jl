@@ -18,7 +18,7 @@ in 16-bit number (`channelbitdepth = 16`).
 
 If called on a complex field, output the image seen by the chip.
 
-See also `storagetype`, `intensity`.
+See also `camerasdict`, `storagetype`, `intensity`.
 
 # Arguments
  - `pixelsize::Float64`: size of the pixel. Only square pixels are supported.
