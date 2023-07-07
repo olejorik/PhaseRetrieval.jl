@@ -82,7 +82,8 @@ julia> psf(ones(Complex{Float64},4,4))
 
 ```
 """
-psf(field::AbstractArray) = abs2.(toimageplane(field)) 
+# psf(field::AbstractArray) = abs2.(toimageplane(field)) 
+psf(field::AbstractArray) = abs.(toimageplane(field)) .^2
 
 psf(amplitude, phase) = psf(field(amplitude, phase))
 

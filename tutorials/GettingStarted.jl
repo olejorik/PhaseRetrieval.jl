@@ -111,7 +111,7 @@ showarray(p2, :grays)
 
 # More details are visible in the logarithmic scale
 
-showarray(PhaseRetrieval.logrescale(p))
+showarray(PhaseRetrieval.logrescale(p2))
 
 # The `SimConfig`type is callable and, if applied to an array of proper dimensions,
 # generates a psf
