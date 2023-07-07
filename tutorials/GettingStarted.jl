@@ -40,24 +40,24 @@ ims = ImagingSensor(lens=lens, cam=cam)
 
 conf1 = SimConfig("full_aperture", ims, 633nm)
 
-# This creates an aperture array of correct dimensions which is suitable for the generation of a PSF using Fourier methods. 
+# This creates simulation configuration for the generation of a PSF using Fourier methods. 
 # If we check near the central pixel, we'll see that for this configuration the PSF is almost one pixel wide
 
-p = psf(conf1.ap)
+p = psf(conf1)
 using CairoMakie # hide
 CairoMakie.activate!(; type="png") # hide
 heatmap(rotr90(p[503:523, 631:651]); axis=(aspect=DataAspect(),))
 
 # Indeed, the Airy pattern should be about 9 microns wide
 
-print("Airy size is 1.22λ/NA = ", 1.22 * 632nm * conf1.f / conf1.d / um, " μm")
+print("Airy size is 1.22λ/NA = $(airysize(conf1)/ um) μm")
 
 # We might thus want to consider a smaller numerical aperture:
 
 lens2 = PhaseRetrieval.diaphragm(lens, 10mm)
 ims2 = PhaseRetrieval.ImagingSensor(; lens=lens2, cam=cam)
 conf2 = SimConfig("10mm aperture", ims2, 633nm)
-p2 = psf(conf2.ap)
+p2 = psf(conf2)
 heatmap(rotr90(p2[503:523, 631:651]); axis=(aspect=DataAspect(),))
 
 # #### Faster creation of an `ImagingSensor`
@@ -67,7 +67,7 @@ keys(camerasdict)
 
 # So the imaging sensor can be created as 
 
-ims = ImagingSensor(; cam=cam = camerasdict["UI1240"], lens=lensesdict["F300A25"])
+ims = ImagingSensor(; cam = camerasdict["UI1240"], lens=lensesdict["F300A25"])
 
 # ### `SimConfig`
 # `SimConfig` contains the necessary information for simulations.

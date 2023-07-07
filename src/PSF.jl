@@ -4,6 +4,7 @@ using FFTW
 using MappedArrays
 
 export AutoExposure, PSFmethod, Fourier, PSFExposure
+export wavelength, airysize
 
 abstract type PSFmethod end
 
@@ -200,10 +201,16 @@ function psf(c::SimConfig{T}; noise = 0, exposure = AutoExposure(), quantize = t
     # TODO add noise
 end
 
+focallength(c::SimConfig) = focallength(c.ims)
+apdiameter(c::SimConfig) = apdiameter(c.ims)
+wavelength(c::SimConfig) = c.λ
+apdiameter(c::SimConfig) = apdiameter(c.ims)
 
 
 
 (s::SimConfig)(phase) = psf(s.ap, phase)
+
+airysize(c::SimConfig) = 1.22 * wavelength(c) * focallength(c) / apdiameter(c) 
 
 
 

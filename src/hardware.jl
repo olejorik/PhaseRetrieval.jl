@@ -1,5 +1,6 @@
 export hwConfig, SimConfig, ImagingSensor, ImagingLens, CameraChip, roi, diaphragm
 export camerasdict, lensesdict, m, mm, um, μm, nm
+export focaldistance, focallength, apdiameter
 
 # dictionaries with typical harware for ease of use with experimental data
 
@@ -245,7 +246,7 @@ focaldistance(ims::ImagingSensor) = ims.focal_distance
 focallength(ims::ImagingSensor) = focallength(ims.lens)
 focallength(len::ImagingLens) = len.focallength
 apdiameter(ims::ImagingSensor) = apdiameter(ims.lens)
-apdiameter(len::ImagingLens) = apdiameter(len.aperture)
+apdiameter(len::ImagingLens) = len.aperture
 
 # Pretty printing
 show(io::IO, x::ImagingLens) = println(io, "Imaging Lens with f=$(x.focallength/mm) mm and D=$(x.aperture/mm) mm")
