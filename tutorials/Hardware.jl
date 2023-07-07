@@ -42,7 +42,7 @@ showarray(ap)
 # and the phase take only values 0 and π):
 imf = PhaseRetrieval.toimageplane(ap)
 showarray(abs.(imf)) |> display
-showphasetight(angle.(imf)); current_figure()
+showphasetight(angle.(imf))[1]
 
 # And now we can quantize this field by our 8-bit and 12-bit example cameras
 cam8bit(imf) |> collect 
@@ -66,8 +66,117 @@ cam8bit(imf) .|> float |> PhaseRetrieval.logrescale .|> Gray
 #  and 12 bit
 cam12bit(imf) .|> float |> PhaseRetrieval.logrescale .|> Gray
 
+# The difference appears because of the tresholding done by the quantization.
+# Without the quantizations, the fields are the same:
+cam8bit(imf, AutoExposure(1), false) .|> float |> PhaseRetrieval.logrescale .|> Gray
+# 
+cam12bit(imf, AutoExposure(1), false) .|> float |> PhaseRetrieval.logrescale .|> Gray
+
+# We can, however, boost exposure 16 (=2⁴) times of the 8bit camera to see more rings:
+cam8bit(imf, AutoExposure(16)) .|> float |> PhaseRetrieval.logrescale .|> Gray
+# We loose, of course, the information in the center of the PSF due to
+# the oversaturation of the camera pixels.
+
 
 # !!! note
 #     Here we have used already sampled optical filed `imf`, so there is no difference in 
 #     the sampling rate performed by the cameras. This effect will be demonstrated in the next example.
 
+# ## SimConfig
+# `SimConfig` contains the necessary information for simulations.
+
+
+# Let's set up a simulation environment matching the following hardware setup: a beam with a footprint of 1 inch (25 mm) diameter is focused with a lens of 300 mm 
+# focal length, and the PSF is registered with [UI-1240 camera](https://en.ids-imaging.com/store/products/cameras/ui-1240le.html).
+# For both lens and camera, we can use structures with self-explanatory names
+# [`ImagingLens`](@ref) and [`CameraChip`](@ref), which we combine in one structure called [`ImagingSensor`](@ref):
+
+using PhaseRetrieval
+lens = ImagingLens(300mm, 25mm)
+cam = CameraChip(;
+    pixelsize=5.3um, imagesize=(1280, 1024), bitdepth=8, channelbitdepth=8
+)
+ims = ImagingSensor(lens=lens, cam=cam)
+
+# Now we can save all these definitions in a simulation config [`SimConfig`](@ref). We also specify the wavelength here:
+
+conf1 = SimConfig("full_aperture", ims, 633nm)
+
+# This creates an aperture array of correct dimensions which is suitable for the generation of a PSF using Fourier methods. 
+# If we check near the central pixel, we'll see that for this configuration the PSF is almost one pixel wide
+
+p = psf(conf1.ap)
+using CairoMakie # hide
+CairoMakie.activate!(; type="png") # hide
+heatmap(rotr90(p[503:523, 631:651]); axis=(aspect=DataAspect(),))
+
+# Indeed, the Airy pattern should be about 9 microns wide
+
+print("Airy size is 1.22λ/NA = ", 1.22 * 632nm * conf1.f / conf1.d / um, " μm")
+
+# We might thus want to consider a smaller numerical aperture:
+
+lens2 = PhaseRetrieval.diaphragm(lens, 10mm)
+ims2 = PhaseRetrieval.ImagingSensor(; lens=lens2, cam=cam)
+conf2 = SimConfig("10mm aperture", ims2, 633nm)
+p2 = psf(conf2.ap)
+heatmap(rotr90(p2[503:523, 631:651]); axis=(aspect=DataAspect(),))
+
+# #### Faster creation of an `ImagingSensor`
+# Some often used cameras are saved in [`camerasdict`](@ref) and [`lensesdict`](@ref) dictionaries
+
+keys(camerasdict)
+
+# So the imaging sensor can be created as 
+
+ims = ImagingSensor(; cam=cam = camerasdict["UI1240"], lens=lensesdict["F300A25"])
+
+#
+# `SimConfig` contains the necessary information for simulations.
+
+fieldnames(typeof(conf2))
+
+# For instance, it contains the aperture mask.
+
+using PhasePlots
+showarray(conf2.ap)
+
+# The dimensions of the mask correspond to the dimensions of the sampled image plane, 
+# but the overall size corresponds to the inverse of the pixel size. 
+# This information is contained in `dualroi` field and can be used to construct the Zernike basis.
+
+conf2.dualroi
+
+# This can be used to create the Zernike basis
+
+using PhaseBases
+basis = ZernikeBW(conf2.dualroi, conf2.d, 10);
+showphase(basis.elements[15] .* conf2.mask)
+current_figure()
+
+# Or the same picture without unnecessary information (by default all phases will be shown scaled to (-π. π])
+
+showphasetight(basis.elements[15] .* conf2.mask)
+current_figure()
+
+# This is a combination of some low-order Zernike polynomials
+
+phase = compose(basis, [4, 6, 15, 16], [2, 1, 0.4, 0.3] * 2π)
+fig = Figure();
+showphasetight(phase .* conf2.mask, fig)
+fig
+
+# For this aberrated phase the PSF is larger
+
+p2 = psf(conf2.ap, phase)
+showarray(p2, :grays)
+
+# More details are visible in the logarithmic scale
+
+showarray(PhaseRetrieval.logrescale(p2))
+
+# The `SimConfig`type is callable and, if applied to an array of proper dimensions,
+# generates a psf
+
+p2 = conf2(phase)
+showarray(p2, :grays)

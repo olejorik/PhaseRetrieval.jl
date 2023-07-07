@@ -1,3 +1,6 @@
+export hwConfig, SimConfig, ImagingSensor, ImagingLens, CameraChip, roi, diaphragm
+export camerasdict, lensesdict, m, mm, um, μm, nm
+
 # dictionaries with typical harware for ease of use with experimental data
 
 const m = 1
@@ -204,6 +207,8 @@ ImagingSensor(ImagingLens(0.3, 0.01), CameraChip(5.2e-6, (1280, 1024), 8, 8), 0.
 julia> ImagingSensor("F300A25",  "UI1540")
 ImagingSensor(ImagingLens(0.3, 0.025), CameraChip(5.2e-6, (1280, 1024), 8, 8), 0.3, (0.0, 0.0), 0.0, 0.0, 0.0)
 ```
+
+See also `focallength`, `focaldistance`, `apdiameter`.
 """
 Base.@kwdef struct ImagingSensor
     lens::ImagingLens
@@ -223,12 +228,29 @@ ImagingSensor(lensname::String, camname::String)=
 #     ImagingSensor(lens= lensesdict[lensname],  cam= camerasdict[camname], kwargs...)
 
 
-
+# Setters
 diaphragm(ims::ImagingSensor, diam) = ImagingSensor(diaphragm(ims.lens, diam), ims.cam,ims.focal_distance, ims.lensorigin,ims.α, ims.β, ims.γ)
    
 roi(ims::ImagingSensor, dims) = ImagingSensor(ims.lens, roi(ims.cam,dims),ims.focal_distance, ims.lensorigin,ims.α, ims.β, ims.γ)
-# end
+focaldistance(ims::ImagingSensor, z::Float64) = ImagingSensor(ims.lens, ims.cam, z, ims.lensorigin,ims.α, ims.β, ims.γ)
 
+# Getters
+"""
+    focaldistance(ims [,z])   
+
+Get/set the distance from the lens to the imaging plane.
+"""
+focaldistance(ims::ImagingSensor) = ims.focal_distance
+
+focallength(ims::ImagingSensor) = focallength(ims.lens)
+focallength(len::ImagingLens) = len.focallength
+apdiameter(ims::ImagingSensor) = apdiameter(ims.lens)
+apdiameter(len::ImagingLens) = apdiameter(len.aperture)
+
+# Pretty printing
+show(io::IO, x::ImagingLens) = println(io, "Imaging Lens with f=$(x.focallength/mm) mm and D=$(x.aperture/mm) mm")
+show(io::IO, x::ImagingSensor) = println(io, "Imaging Sensor made with an $(x.lens) and a $(x.cam)")
+show(io::IO, x::CameraChip) = println(io, "Camera with square pixel $(x.pixelsize/um) μm, $(x.imagesize) frame and a $(x.bitdepth)/$(x.channelbitdepth) bit/channel output.")
 
 Base.@kwdef struct hwConfig
     cam::PhaseRetrieval.CameraChip
@@ -248,61 +270,6 @@ end
     based on UI-1540 camera, with a 1 inch lens with focal length 300mm and He-Ne laser. 
 """
 hwConfig(s::String, f, λ, d) = hwConfig(PhaseRetrieval.camerasdict[s], f, λ, d)
-
-"""
-    SimConfig(name::String, ims::PhaseRetrieval.ImagingSensor, λ::Float64) creates forward-model 
-    simulation environment for the PR problem obtained with  `ims` image sensor (camera + lens) at 
-        wavelength `λ`. `name` is a sting identifacator used for, for instace, plotting labels.
-
-`SimConfig` contains the following fields:
-    ```julia
-    name::String
-    ims::PhaseRetrieval.ImagingSensor
-    f::Float64
-    λ::Float64
-    d::Float64
-    q::Int
-    roi::CartesianDomain2D
-    dualroi::CartesianDomain2D
-    ap::Array{Float64,2}
-    mask::Array{Float64,2}
-    ````
-
-"""
-struct SimConfig
-    name::String
-    ims::PhaseRetrieval.ImagingSensor
-    f::Float64
-    λ::Float64
-    d::Float64
-    q::Int
-    roi::CartesianDomain2D
-    dualroi::CartesianDomain2D
-    ap::Array{Float64,2}
-    mask::Array{Float64,2}
-    # diversity::Array{Float64,2} # not implemented
-end
-
-
-function SimConfig(name::String, ims::PhaseRetrieval.ImagingSensor, λ::Float64)
-    q = PhaseRetrieval.upscaleFactor(ims, λ)
-    f = ims.lens.focallength
-    d = ims.lens.aperture
-    roi = make_centered_domain2D(ims)
-    dualroi = dualDomain(roi, q) * f * λ
-    ap, mask = aperture(dualroi, d)
-    return SimConfig(name, ims, f, λ, d, q, roi, dualroi, ap, mask)
-end
-
-function SimConfig(name::String, hw::hwConfig)
-    ims = ImagingSensor(
-        lens = ImagingLens(hw.f, hw.d),
-        cam = hw.cam)
-    λ = hw.λ
-    return SimConfig(name, ims,  λ)
-end
-
-(s::SimConfig)(phase) = psf(s.ap, phase)
 
 
 
@@ -335,5 +302,3 @@ lensesdict["F300A25"] = ImagingLens(300mm, 25mm)
 lensesdict["F700A75"] = ImagingLens(700mm, 75mm)
 
 
-export hwConfig, SimConfig, ImagingSensor, ImagingLens, CameraChip, roi, diaphragm
-export camerasdict, lensesdict, m, mm, um, μm, nm

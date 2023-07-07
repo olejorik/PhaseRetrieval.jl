@@ -3,6 +3,7 @@ using LinearAlgebra
 using Statistics
 using FFTW
 using SampledDomains: CartesianDomain2D, dualRange, dualDomain
+import Base: show
 import SampledDomains: make_centered_domain2D
 using ImageCore
 

@@ -3,6 +3,8 @@
 using FFTW
 using MappedArrays
 
+export AutoExposure, PSFmethod, Fourier, PSFExposure
+
 abstract type PSFmethod end
 
 """
@@ -21,7 +23,8 @@ end
 
 AutoExposure() = AutoExposure(1)
 
-export AutoExposure
+myabs2(x) = abs(x)^2
+myabs2(x) = abs2(x)
 
 field(amplitude, phase) = amplitude .* exp.( 1im * phase)
 
@@ -82,8 +85,8 @@ julia> psf(ones(Complex{Float64},4,4))
 
 ```
 """
-# psf(field::AbstractArray) = abs2.(toimageplane(field)) 
-psf(field::AbstractArray) = abs.(toimageplane(field)) .^2
+psf(field::AbstractArray) = myabs2.(toimageplane(field)) 
+# psf(field::AbstractArray) = abs.(toimageplane(field)) .^2
 
 psf(amplitude, phase) = psf(field(amplitude, phase))
 
@@ -134,15 +137,73 @@ julia> PhaseRetrieval.intensity(imf) .|> round
 ```
 
 """
-intensity(field) = mappedarray(abs2,field)
+intensity(field) = mappedarray(myabs2,field)
 
-function (cam::CameraChip)(field, exposure::PSFExposure = AutoExposure()) 
+function (cam::CameraChip)(field, exposure::PSFExposure = AutoExposure(), quantize = true) 
     imf = intensity(field)
     maxint = maximum(imf) / exposure.scale
-    storagetype = getstoragetype(cam)
-    # storagetype = N4f12 #debug -- it's three times faster comapred with the unnknown type
-    return mappedarray(scaleminmax(storagetype,0,maxint), imf)
+    storagetype = quantize ? getstoragetype(cam) : Float64
+    # storagetype = N4f12 #debug -- it's three times faster compared with the unnknown type
+    return  mappedarray(scaleminmax(storagetype,0,maxint), imf)
 end
+
+"""
+    SimConfig(name::String, ims::PhaseRetrieval.ImagingSensor, λ::Float64) creates forward-model 
+    simulation environment for the PR problem obtained with  `ims` image sensor (camera + lens) at 
+        wavelength `λ`. `name` is a sting identifacator used for, for instace, plotting labels.
+
+`SimConfig` contains the following fields:
+    ```julia
+    name::String
+    ims::PhaseRetrieval.ImagingSensor
+    f::Float64
+    λ::Float64
+    d::Float64
+    q::Int
+    roi::CartesianDomain2D
+    dualroi::CartesianDomain2D
+    ap::Array{Float64,2}
+    mask::Array{Float64,2}
+    ````
+
+"""
+struct SimConfig{Fourier}
+    name::String
+    ims::ImagingSensor
+    λ::Float64
+    # q::Int
+    roi::CartesianDomain2D
+    dualroi::CartesianDomain2D
+    ap::Array{Float64,2}
+    mask::Array{Float64,2}
+    pixelphase::Array{Float64,2}
+    diversity::Vector{Union{Nothing, Array{Float64,2}}} # TODO add defocus calculation from focaldistance
+end
+
+SimConfig(args... ;  method::T = Fourier(), kwargs...) where {T<: PSFmethod} = SimConfig{T}(args..., kwargs...)
+
+function SimConfig{Fourier}(name::String, ims::ImagingSensor, λ::Float64)
+    q = upscaleFactor(ims, λ)
+    f = ims.lens.focallength
+    d = ims.lens.aperture
+    roi = make_centered_domain2D(ims)
+    dualroi = dualDomain(roi, q) * f * λ
+    ap, mask = aperture(dualroi, d)
+    return SimConfig{Fourier}(name, ims, λ, roi, dualroi, ap, mask, zero(ap), [nothing])
+end
+
+algtype(x::SimConfig{T}) where T = T() 
+
+function psf(c::SimConfig{T}; noise = 0, exposure = AutoExposure(), quantize = true ) where T
+    focalfield = toimageplane(field(c.ap,c.pixelphase), algtype(c))
+    ret = c.ims.cam(focalfield, exposure , quantize)
+    # TODO add noise
+end
+
+
+
+
+(s::SimConfig)(phase) = psf(s.ap, phase)
 
 
 
