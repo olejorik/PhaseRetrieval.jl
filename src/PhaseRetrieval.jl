@@ -11,7 +11,7 @@ import AlternatingProjections: Problem, Algorithm, solve, TwoSetsFP, IterativeAl
 using AlternatingProjections
 
 export SHdiversity
-export psf, phwrap, subpsf
+export psf, phwrap, subpsf, logrescale
 export removepiston, removetiptilt, twinphase
 
 # export Linear

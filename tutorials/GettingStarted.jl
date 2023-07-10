@@ -22,12 +22,16 @@
 
 # ## [Forward model](@id tutorial-forward) 
 
-# For the PR problem, the forward model is a simulation of a realistic readout of a camera of a PSF (or an extended object) under some predefined conditions.
+# For the PR problem, the forward model is a simulation of a 
+# realistic readout of a camera of a PSF (or an extended object) under some predefined conditions.
 
-# Let's set up a simulation environment matching the following hardware setup: a beam with a footprint of 1 inch (25 mm) diameter is focused with a lens of 300 mm 
+# ### Initialising the simulation
+# Let's set up a simulation environment matching the following hardware setup: 
+# a beam with a footprint of 1 inch (25 mm) diameter is focused with a lens of 300 mm 
 # focal length, and the PSF is registered with [UI-1240 camera](https://en.ids-imaging.com/store/products/cameras/ui-1240le.html).
 # For both lens and camera, we can use structures with self-explanatory names
-# [`ImagingLens`](@ref) and [`CameraChip`](@ref), which we combine in one structure called [`ImagingSensor`](@ref):
+# [`ImagingLens`](@ref) and [`CameraChip`](@ref), which we combine in one structure 
+# called [`ImagingSensor`](@ref):
 
 using PhaseRetrieval
 lens = ImagingLens(300mm, 25mm)
@@ -36,12 +40,14 @@ cam = CameraChip(;
 )
 ims = ImagingSensor(lens=lens, cam=cam)
 
-# Now we can save all these definitions in a simulation config [`SimConfig`](@ref). We also specify the wavelength here:
+# Now we can save all these definitions in a simulation config [`SimConfig`](@ref). 
+# We also specify the wavelength here:
 
 conf1 = SimConfig("full_aperture", ims, 633nm)
 
-# This creates simulation configuration for the generation of a PSF using Fourier methods. 
-# If we check near the central pixel, we'll see that for this configuration the PSF is almost one pixel wide
+# This creates simulation configuration for the generation of a PSF using [`Fourier`](@ref) methods. 
+# If we check near the central pixel, we'll see that for this configuration the PSF is 
+# almost one pixel wide
 
 p = psf(conf1)
 using CairoMakie # hide
@@ -60,7 +66,7 @@ conf2 = SimConfig("10mm aperture", ims2, 633nm)
 p2 = psf(conf2)
 heatmap(rotr90(p2[503:523, 631:651]); axis=(aspect=DataAspect(),))
 
-# #### Faster creation of an `ImagingSensor`
+# ### Faster creation of an `ImagingSensor`
 # Some often used cameras are saved in [`camerasdict`](@ref) and [`lensesdict`](@ref) dictionaries
 
 keys(camerasdict)
@@ -69,49 +75,70 @@ keys(camerasdict)
 
 ims = ImagingSensor(; cam = camerasdict["UI1240"], lens=lensesdict["F300A25"])
 
-# ### `SimConfig`
-# `SimConfig` contains the necessary information for simulations.
+# ### Quantisation and exposure level
+# Bey default, the returned PSF approximates the output of a camera with 
+# finite bit resolution (8 bits in our case):
 
-fieldnames(typeof(conf2))
+eltype(p2)
 
-# For instance, it contains the aperture mask.
+# One can use `Images.jl` package to obtain images as saved by the camera:
+# The whole frame:
+using ImageCore
+p2 .|> Gray
 
-using PhasePlots
-showarray(conf2.ap)
+# Crop of the central part
+p2[503:523, 631:651] .|> Gray
 
-# The dimensions of the mask correspond to the dimensions of the sampled image plane, 
-# but the overall size corresponds to the inverse of the pixel size. 
-# This information is contained in `dualroi` field and can be used to construct the Zernike basis.
+# By default, the returned PSF is caled between 0 and 1 ([`AutoExposure`](@ref) feature).
+# This can be changed by passing additional parameters to [`psf`](@ref) function.
+# Here is an example of a psf with 4 times longer exposure:
+psf2_sat4 = psf(conf2, exposure =  AutoExposure(4))
+psf2_sat4[503:523, 631:651]   .|> Gray
 
-conf2.dualroi
+# The same psf in logarithmic scale:
+psf2_sat4[503:523, 631:651] .|> float |> logrescale  .|> Gray
 
-# This can be used to create the Zernike basis
+# And ithout quantisation:
+psf2_sat4_float = psf(conf2, exposure =  AutoExposure(4), quantize = false)
+psf2_sat4_float[503:523, 631:651] |> logrescale  .|> Gray
+
+
+# ### Adding the phase aberration
+# Now we can add some phase to out configuration.
+# To add a modal phase represented by Zernike polynomials, we nee to
+# create the basis first. This creates it for the rirst 10 radial orders:
 
 using PhaseBases
-basis = ZernikeBW(conf2.dualroi, conf2.d, 10);
-showphase(basis.elements[15] .* conf2.mask)
-current_figure()
+z10 = ZernikeBW(conf2, 10);
 
-# Or the same picture without unnecessary information (by default all phases will be shown scaled to (-π. π])
 
-showphasetight(basis.elements[15] .* conf2.mask)
-current_figure()
+# The basis now contains 60 Zernike polynomilals (in Born and Wolf form,
+# normed by *rms* value),
+# numbered in OSA/ANSI indexes. Elements of basis can be accesed as follows:
+# - by double indexing
+
+using PhasePlots
+showphasetight(z10(m=10,n=10) .* conf2.mask)[1]
+
+# By single index
+showphasetight(z10(12) .* conf2.mask)[1]
+
 
 # This is a combination of some low-order Zernike polynomials
+phase = ModalPhase([4, 6, 15, 16], [2, 1, 0.4, 0.3] * 2π, z10)
+showphasetight(phase .* conf2.mask)[1]
 
-phase = compose(basis, [4, 6, 15, 16], [2, 1, 0.4, 0.3] * 2π)
-fig = Figure();
-showphasetight(phase .* conf2.mask, fig)
-fig
+# To apply this phase to the simulation cofiguration, apply 
+phase(conf2)
 
-# For this aberrated phase the PSF is larger
+# and chenck the PSF
+p2 = psf(conf2)
+p2 .|> Gray
 
-p2 = psf(conf2.ap, phase)
-showarray(p2, :grays)
+# For this aberrated phase the PSF is larger and 
+# more details are visible in the logarithmic scale
 
-# More details are visible in the logarithmic scale
-
-showarray(PhaseRetrieval.logrescale(p2))
+showarray(logrescale(float(p2)))
 
 # The `SimConfig`type is callable and, if applied to an array of proper dimensions,
 # generates a psf

@@ -12,6 +12,8 @@ abstract type PSFmethod end
     Fourier()
 
 FFT-based method of simulation of a PSF.
+
+See also `psf`, `SimConfig`.
 """
 struct Fourier <: PSFmethod end
 struct ChirpZ <: PSFmethod end
@@ -25,7 +27,7 @@ end
 AutoExposure() = AutoExposure(1)
 
 myabs2(x) = abs(x)^2
-myabs2(x) = abs2(x)
+# myabs2(x) = abs2(x)
 
 field(amplitude, phase) = amplitude .* exp.( 1im * phase)
 
@@ -149,23 +151,22 @@ function (cam::CameraChip)(field, exposure::PSFExposure = AutoExposure(), quanti
 end
 
 """
-    SimConfig(name::String, ims::PhaseRetrieval.ImagingSensor, λ::Float64) creates forward-model 
-    simulation environment for the PR problem obtained with  `ims` image sensor (camera + lens) at 
-        wavelength `λ`. `name` is a sting identifacator used for, for instace, plotting labels.
+    SimConfig(name::String, ims::PhaseRetrieval.ImagingSensor, λ::Float64; method = Fourier()) creates forward-model 
+    simulation environment, using algorithm defined by `method`,
+    for the PR problem obtained with  `ims` image sensor (camera + lens) at 
+    wavelength `λ`. `name` is a sting identifacator used for, for instace, plotting labels.
 
-`SimConfig` contains the following fields:
-    ```julia
-    name::String
-    ims::PhaseRetrieval.ImagingSensor
-    f::Float64
-    λ::Float64
-    d::Float64
-    q::Int
-    roi::CartesianDomain2D
-    dualroi::CartesianDomain2D
-    ap::Array{Float64,2}
-    mask::Array{Float64,2}
-    ````
+`SimConfig{Fourier}` contains the following fields:
+
+    - name::String
+    - ims::PhaseRetrieval.ImagingSensor
+    - λ::Float64
+    - roi::CartesianDomain2D
+    - dualroi::CartesianDomain2D
+    - ap::Array{Float64,2}
+    - mask::Array{Float64,2}pixelphase::Array{Float64,2}
+    - diversity::Vector{Union{Nothing, Array{Float64,2}}} 
+
 
 """
 struct SimConfig{Fourier}
@@ -179,7 +180,7 @@ struct SimConfig{Fourier}
     mask::Array{Float64,2}
     pixelphase::Array{Float64,2}
     diversity::Vector{Union{Nothing, Array{Float64,2}}} # TODO add defocus calculation from focaldistance
-end
+    end
 
 SimConfig(args... ;  method::T = Fourier(), kwargs...) where {T<: PSFmethod} = SimConfig{T}(args..., kwargs...)
 
@@ -202,15 +203,18 @@ function psf(c::SimConfig{T}; noise = 0, exposure = AutoExposure(), quantize = t
 end
 
 focallength(c::SimConfig) = focallength(c.ims)
-apdiameter(c::SimConfig) = apdiameter(c.ims)
+focaldistance(c::SimConfig) = focaldistance(c.ims)
 wavelength(c::SimConfig) = c.λ
 apdiameter(c::SimConfig) = apdiameter(c.ims)
 
 
 
-(s::SimConfig)(phase) = psf(s.ap, phase)
+(s::SimConfig)(phase) = psf(s.ap, collect(phase))
 
 airysize(c::SimConfig) = 1.22 * wavelength(c) * focallength(c) / apdiameter(c) 
 
+import PhaseBases: ZernikeBW, ModalPhase
+ZernikeBW(c::SimConfig{Fourier}, order = 10) = ZernikeBW(c.dualroi, apdiameter(c), order)
 
-
+(ph::ModalPhase)(c::SimConfig) = set_phase!(c, ph)
+set_phase!(c::SimConfig, ph::ModalPhase) = (c.pixelphase .=  collect(ph); c)

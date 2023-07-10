@@ -137,7 +137,7 @@ See also [`diaphragm`](@ref), [`lensesdict`](@ref).
 # Example
 ```jldoctest
 julia> lens = ImagingLens(300mm, 25mm)
-ImagingLens(0.3, 0.025)
+Imaging Lens with f=300.0 mm and D=25.0 mm
 ```
 """
 Base.@kwdef struct ImagingLens
@@ -155,7 +155,7 @@ Diaphragm can be larger than the lens diameter (there is no "hardware limitation
 # Example
 ```jldoctest
 julia> diaphragm(ImagingLens(300mm, 25mm), 10mm)
-ImagingLens(0.3, 0.01)
+Imaging Lens with f=300.0 mm and D=10.0 mm
 ```
 
 """
@@ -200,13 +200,16 @@ julia> ImagingSensor(lens = ImagingLens(300mm, 25mm),
                channelbitdepth=8
                )
            )
-ImagingSensor(ImagingLens(0.3, 0.025), CameraChip(5.2e-6, (1280, 1024), 8, 8), 0.3, (0.0, 0.0), 0.0, 0.0, 0.0)
+Imaging Sensor made with an Imaging Lens with f=300.0 mm and D=25.0 mm
+ and a Camera with square pixel 5.2 μm, (1280, 1024) frame and a 8/8 bit/channel output.
  
 julia> diaphragm(ImagingSensor(lens = lensesdict["F300A25"], cam= camerasdict["UI1540"]), 10mm)
-ImagingSensor(ImagingLens(0.3, 0.01), CameraChip(5.2e-6, (1280, 1024), 8, 8), 0.3, (0.0, 0.0), 0.0, 0.0, 0.0)
- 
+Imaging Sensor made with an Imaging Lens with f=300.0 mm and D=10.0 mm
+ and a Camera with square pixel 5.2 μm, (1280, 1024) frame and a 8/8 bit/channel output.
+
 julia> ImagingSensor("F300A25",  "UI1540")
-ImagingSensor(ImagingLens(0.3, 0.025), CameraChip(5.2e-6, (1280, 1024), 8, 8), 0.3, (0.0, 0.0), 0.0, 0.0, 0.0)
+Imaging Sensor made with an Imaging Lens with f=300.0 mm and D=25.0 mm
+ and a Camera with square pixel 5.2 μm, (1280, 1024) frame and a 8/8 bit/channel output.
 ```
 
 See also `focallength`, `focaldistance`, `apdiameter`.

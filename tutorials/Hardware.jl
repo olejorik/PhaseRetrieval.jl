@@ -66,7 +66,7 @@ cam8bit(imf) .|> float |> PhaseRetrieval.logrescale .|> Gray
 #  and 12 bit
 cam12bit(imf) .|> float |> PhaseRetrieval.logrescale .|> Gray
 
-# The difference appears because of the tresholding done by the quantization.
+# The difference appears because of the thresholding done by the quantization.
 # Without the quantizations, the fields are the same:
 cam8bit(imf, AutoExposure(1), false) .|> float |> PhaseRetrieval.logrescale .|> Gray
 # 
@@ -74,7 +74,7 @@ cam12bit(imf, AutoExposure(1), false) .|> float |> PhaseRetrieval.logrescale .|>
 
 # We can, however, boost exposure 16 (=2⁴) times of the 8bit camera to see more rings:
 cam8bit(imf, AutoExposure(16)) .|> float |> PhaseRetrieval.logrescale .|> Gray
-# We loose, of course, the information in the center of the PSF due to
+# We lost, of course, the information in the center of the PSF due to
 # the oversaturation of the camera pixels.
 
 
@@ -86,7 +86,8 @@ cam8bit(imf, AutoExposure(16)) .|> float |> PhaseRetrieval.logrescale .|> Gray
 # `SimConfig` contains the necessary information for simulations.
 
 
-# Let's set up a simulation environment matching the following hardware setup: a beam with a footprint of 1 inch (25 mm) diameter is focused with a lens of 300 mm 
+# Let's set up a simulation environment matching the following hardware setup: 
+# a beam with a footprint of 1 inch (25 mm) diameter is focused with a lens of 300 mm 
 # focal length, and the PSF is registered with [UI-1240 camera](https://en.ids-imaging.com/store/products/cameras/ui-1240le.html).
 # For both lens and camera, we can use structures with self-explanatory names
 # [`ImagingLens`](@ref) and [`CameraChip`](@ref), which we combine in one structure called [`ImagingSensor`](@ref):
@@ -150,14 +151,12 @@ conf2.dualroi
 # This can be used to create the Zernike basis
 
 using PhaseBases
-basis = ZernikeBW(conf2.dualroi, conf2.d, 10);
-showphase(basis.elements[15] .* conf2.mask)
-current_figure()
+basis = ZernikeBW(conf2.dualroi, apdiameter(conf2), 10);
+showphase(basis.elements[15] .* conf2.mask)[1]
 
 # Or the same picture without unnecessary information (by default all phases will be shown scaled to (-π. π])
 
-showphasetight(basis.elements[15] .* conf2.mask)
-current_figure()
+showphasetight(basis.elements[15] .* conf2.mask)[1]
 
 # This is a combination of some low-order Zernike polynomials
 
