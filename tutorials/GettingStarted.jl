@@ -204,3 +204,12 @@ showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask); current_figure()
 
 # You can try to change slightly the values of `β` above and see that algorithm
 # might converge to another solution. This is another problem of AP-based algorithms.
+sol = solve(pr, (DRAPparam(β = 0.91,keephistory = true, maxit=450), APparam(maxit = 10)))
+showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask); current_figure()
+
+# Douglas-Racford is known to eventully find the solution if you run it long enough:
+# For instance, starting with `b`=0.91 would require about 20000 iteration to converge:
+sol = solve(pr, (DRAPparam(β = 0.91,keephistory = true, maxit=20000), APparam(maxit = 100)))
+showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask); current_figure()
+
+# Fortunately, julia is fast, so the calcualtions of 20K iterations take less then a minute.
