@@ -45,7 +45,7 @@ ims = ImagingSensor(lens=lens, cam=cam)
 
 conf1 = SimConfig("full_aperture", ims, 633nm)
 
-# This creates simulation configuration for the generation of a PSF using [`Fourier`](@ref) methods. 
+# This creates a simulation configuration for the generation of a PSF using [`Fourier`](@ref) methods. 
 # If we check near the central pixel, we'll see that for this configuration the PSF is 
 # almost one pixel wide
 
@@ -76,7 +76,7 @@ keys(camerasdict)
 ims = ImagingSensor(; cam = camerasdict["UI1240"], lens=lensesdict["F300A25"])
 
 # ### Quantisation and exposure level
-# Bey default, the returned PSF approximates the output of a camera with 
+# By default, the returned PSF approximates the output of a camera with 
 # finite bit resolution (8 bits in our case):
 
 eltype(p2)
@@ -89,7 +89,7 @@ p2 .|> Gray
 # Crop of the central part
 p2[503:523, 631:651] .|> Gray
 
-# By default, the returned PSF is caled between 0 and 1 ([`AutoExposure`](@ref) feature).
+# By default, the returned PSF is called between 0 and 1 ([`AutoExposure`](@ref) feature).
 # This can be changed by passing additional parameters to [`psf`](@ref) function.
 # Here is an example of a psf with 4 times longer exposure:
 psf2_sat4 = psf(conf2, exposure =  AutoExposure(4))
@@ -106,21 +106,21 @@ psf2_sat4_float[503:523, 631:651] |> logrescale  .|> Gray
 # ### Adding the phase aberration
 # Now we can add some phase to out configuration.
 # To add a modal phase represented by Zernike polynomials, we nee to
-# create the basis first. This creates it for the rirst 10 radial orders:
+# create the basis first. This creates it for the first 10 radial orders:
 
 using PhaseBases
 z10 = ZernikeBW(conf2, 10);
 
 
-# The basis now contains 60 Zernike polynomilals (in Born and Wolf form,
+# The basis now contains 60 Zernike polynomials (in Born and Wolf form,
 # normed by *rms* value),
-# numbered in OSA/ANSI indexes. Elements of basis can be accesed as follows:
-# - by double indexing
+# numbered in OSA/ANSI indexes. Elements of basis can be accessed as follows:
+# - by double indexing:
 
 using PhasePlots
 showphasetight(z10(m=10,n=10) .* conf2.mask)[1]
 
-# By single index
+# - by single index:
 showphasetight(z10(12) .* conf2.mask)[1]
 
 
@@ -128,7 +128,7 @@ showphasetight(z10(12) .* conf2.mask)[1]
 phase = ModalPhase([4, 6, 15, 16], [2, 1, 0.4, 0.3] * 2π, z10)
 showphasetight(phase .* conf2.mask)[1]
 
-# To apply this phase to the simulation cofiguration, apply 
+# To apply this phase to the simulation configuration, apply it literally:
 phase(conf2)
 
 # and chenck the PSF
