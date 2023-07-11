@@ -180,6 +180,17 @@ showphasetight(fftshift(angle.(sol[1])) .* conf2.mask); current_figure()
 #  so here is the main problem of the AP-based PR algorithms --- they require quite
 #  a long time to converge, even for the noiseless data.
 
+# Here is an attempt with initial guess given by th simple subset method
+th = 0.6 * maximum(A)
+xth = copy(A)
+xth[A .> th] .= 1
+xth[A .<= th] .= 0
+showarray(xth)
+
+alg = DRAPparam(x⁰ = ifft(xth), β = 0.95,keephistory = true, maxit=200)
+sol = solve(pr, (alg, APparam(maxit = 50)))
+showphasetight(fftshift(angle.(sol[1])) .* conf2.mask); current_figure()
+
 # Let's try to have a smaller crop
 center = [size(p2)...].÷2
 crophw=64
@@ -213,3 +224,70 @@ sol = solve(pr, (DRAPparam(β = 0.91,keephistory = true, maxit=20000), APparam(m
 showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask); current_figure()
 
 # Fortunately, julia is fast, so the calcualtions of 20K iterations take less then a minute.
+
+# ## Initialisation via spectral method
+function spectral_ini(pr, th = 0.2)
+    xo = copy(AlternatingProjections.amp(AlternatingProjections.generatingset(pr.B)))
+    xo[ xo .< maximum(xo) * th ] .= 0
+    return yo = AlternatingProjections.project(ifft(xo),pr.A)
+    # return ifft(xo)
+end
+
+xo = spectral_ini(pr, 0.01)
+showphasetight(angle.(fftshift(xo)) .* conf2crop.mask)[1]
+alg = DRAPparam(x⁰ = xo, β = 0.99,keephistory = true, maxit=450)
+sol = solve(pr, (alg, APparam(maxit = 10)))
+showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask); current_figure()
+
+function it!(x1,x,y)
+    x1 .= ifft( y .* fft(x))
+    x1 .= x1/(norm(x1))
+    return x1
+end
+
+function it2!(x1,x,y)
+    x1 .=  y .* x
+    x1 .= x1 ./ (norm(x1))
+    return x1
+end
+
+showarray(A)
+y = copy(A)
+y[ y .< maximum(y) * 0.01 ] .= 0
+showarray(y)
+x1=rand(ComplexF64, size(xo))
+x2=rand(ComplexF64, size(xo))
+showarray(abs.(x1))
+# showarray(abs.(it!(x1,it!(x1,it!(x1, xo, y),y),y)))
+for i in 1:5000
+    it!(x1,x1,y)
+end
+for i in 1:5000
+    it!(x2,x2,y)
+end
+# fft!(x2)
+showarray(fftshift(abs.(x1)))
+showphasetight(fftshift(angle.(x1)) .* conf2crop.mask)[1]
+showarray(fftshift(abs.(fft(x1))))
+showarray(fftshift(abs.(x2)))
+showphasetight(fftshift(angle.(x2)) .* conf2crop.mask)[1]
+showarray(fftshift(abs.(fft(x2))))
+
+showarray(pcrop)
+alg = DRAPparam(x⁰ = (x1 .-1) ./ abs.(x1 .- 1 .+ 1e6), β = 0.92,keephistory = true, maxit=2000)
+sol = solve(pr, (alg, APparam(maxit = 50)))
+showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask); current_figure()
+
+alg = DRAPparam(x⁰ = (x2 .-1) ./ abs.(x2 .- 1 .+ 1e6), β = 1,keephistory = true, maxit=2000)
+sol = solve(pr, (alg, APparam(maxit = 50)))
+showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask); current_figure()
+
+# Simple subset method
+th = 0.2
+xth = copy(A)
+xth[A .> th] .= 1
+xth[A .<= th] .= 0
+
+alg = DRAPparam(x⁰ = ifft(xth), β = 0.91,keephistory = true, maxit=10000)
+sol = solve(pr, (alg, APparam(maxit = 50)))
+showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask); current_figure()
