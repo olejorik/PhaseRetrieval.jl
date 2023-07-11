@@ -230,7 +230,6 @@ function spectral_ini(pr, th = 0.2)
     xo = copy(AlternatingProjections.amp(AlternatingProjections.generatingset(pr.B)))
     xo[ xo .< maximum(xo) * th ] .= 0
     return yo = AlternatingProjections.project(ifft(xo),pr.A)
-    # return ifft(xo)
 end
 
 xo = spectral_ini(pr, 0.01)
