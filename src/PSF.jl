@@ -3,7 +3,7 @@ using FFTW
 using MappedArrays
 
 export AutoExposure, PSFmethod, Fourier, PSFExposure
-export wavelength, airysize
+export wavelength, airysize, diversed_psfs
 
 abstract type PSFmethod end
 
@@ -17,6 +17,8 @@ See also `psf`, `SimConfig`.
 struct Fourier <: PSFmethod end
 struct ChirpZ <: PSFmethod end
 struct MVM <: PSFmethod end
+
+const default_forward_method = Fourier()
 
 abstract type PSFExposure end
 struct AutoExposure <: PSFExposure
@@ -180,7 +182,9 @@ struct SimConfig{Fourier}
     diversity::Dict{String,Phase} # TODO add defocus calculation from focaldistance
 end
 
-function SimConfig(args...; method::T=Fourier(), kwargs...) where {T<:PSFmethod}
+function SimConfig(
+    args...; method::T=default_forward_method, kwargs...
+) where {T<:PSFmethod}
     return SimConfig{T}(args..., kwargs...)
 end
 
@@ -212,6 +216,15 @@ function psf(c::SimConfig{T}; noise=0, exposure=AutoExposure(), quantize=true) w
     # TODO add noise
 end
 
+function diversed_psfs(
+    c::SimConfig{T}; noise=0, exposure=AutoExposure(), quantize=true
+) where {T}
+    div_fields = vcat(
+        [pupilfield(c)], [field(pupilfield(c), collect(d)) for d in values(c.diversity)]
+    )
+    return [c.ims.cam(toimageplane(f, algtype(c)), exposure, quantize) for f in div_fields]
+end
+
 focallength(c::SimConfig) = focallength(c.ims)
 focaldistance(c::SimConfig) = focaldistance(c.ims)
 wavelength(c::SimConfig) = c.λ
@@ -226,4 +239,4 @@ ZernikeBW(c::SimConfig{Fourier}, order=10) = ZernikeBW(c.dualroi, apdiameter(c),
 
 (ph::Phase)(c::SimConfig) = set_phase!(c, ph, "aberration")
 (ph::Phase)(c::SimConfig, phasenature::String) = set_phase!(c, ph, phasenature)
-set_phase!(c::SimConfig, ph::Phase, phasenature::Sting) = (c.phases[phasenature] = ph; c)
+set_phase!(c::SimConfig, ph::Phase, phasenature::String) = (c.phases[phasenature] = ph; c)
