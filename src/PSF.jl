@@ -1,4 +1,3 @@
-# Different methods of generating PSF
 
 using FFTW
 using MappedArrays
@@ -20,7 +19,7 @@ struct ChirpZ <: PSFmethod end
 struct MVM <: PSFmethod end
 
 abstract type PSFExposure end
-struct AutoExposure <:PSFExposure
+struct AutoExposure <: PSFExposure
     scale::Float64
 end
 
@@ -29,7 +28,7 @@ AutoExposure() = AutoExposure(1)
 myabs2(x) = abs(x)^2
 # myabs2(x) = abs2(x)
 
-field(amplitude, phase) = amplitude .* exp.( 1im * phase)
+field(amplitude, phase) = amplitude .* exp.(1im * phase)
 
 """
     psf(amplitude, phase) -> psfimage
@@ -78,7 +77,7 @@ julia> psf(ones(3,3),zeros(3,3))
  0.0   0.0  0.0
  0.0  81.0  0.0
  0.0   0.0  0.0
- 
+
 julia> psf(ones(Complex{Float64},4,4))
 4×4 Matrix{Float64}:
  0.0  0.0    0.0  0.0
@@ -88,14 +87,13 @@ julia> psf(ones(Complex{Float64},4,4))
 
 ```
 """
-psf(field::AbstractArray) = myabs2.(toimageplane(field)) 
+psf(field::AbstractArray) = myabs2.(toimageplane(field))
 # psf(field::AbstractArray) = abs.(toimageplane(field)) .^2
 
 psf(amplitude, phase) = psf(field(amplitude, phase))
 
-subpsf(field::AbstractArray,Q::Integer) = psf(subdivide_sum(field,Q))
-subpsf(amplitude, phase,Q::Integer) = psf(subdivide_sum(field(amplitude, phase),Q))
-
+subpsf(field::AbstractArray, Q::Integer) = psf(subdivide_sum(field, Q))
+subpsf(amplitude, phase, Q::Integer) = psf(subdivide_sum(field(amplitude, phase), Q))
 
 """
     toimageplane(field [, method = Fourier()])
@@ -108,7 +106,7 @@ Available methods:
  - `MVM` -- not implemented
 """
 toimageplane(field, ::Fourier) = fftshift(fft(ifftshift(field)))
-toimageplane(field) = toimageplane(field, Fourier()) 
+toimageplane(field) = toimageplane(field, Fourier())
 
 """
     intensity(field)
@@ -140,20 +138,20 @@ julia> PhaseRetrieval.intensity(imf) .|> round
 ```
 
 """
-intensity(field) = mappedarray(myabs2,field)
+intensity(field) = mappedarray(myabs2, field)
 
-function (cam::CameraChip)(field, exposure::PSFExposure = AutoExposure(), quantize = true) 
+function (cam::CameraChip)(field, exposure::PSFExposure=AutoExposure(), quantize=true)
     imf = intensity(field)
     maxint = maximum(imf) / exposure.scale
     storagetype = quantize ? getstoragetype(cam) : Float64
     # storagetype = N4f12 #debug -- it's three times faster compared with the unnknown type
-    return  mappedarray(scaleminmax(storagetype,0,maxint), imf)
+    return mappedarray(scaleminmax(storagetype, 0, maxint), imf)
 end
 
 """
-    SimConfig(name::String, ims::PhaseRetrieval.ImagingSensor, λ::Float64; method = Fourier()) creates forward-model 
+    SimConfig(name::String, ims::PhaseRetrieval.ImagingSensor, λ::Float64; method = Fourier()) creates forward-model
     simulation environment, using algorithm defined by `method`,
-    for the PR problem obtained with  `ims` image sensor (camera + lens) at 
+    for the PR problem obtained with  `ims` image sensor (camera + lens) at
     wavelength `λ`. `name` is a sting identifacator used for, for instace, plotting labels.
 
 `SimConfig{Fourier}` contains the following fields:
@@ -165,7 +163,7 @@ end
     - dualroi::CartesianDomain2D
     - ap::Array{Float64,2}
     - mask::Array{Float64,2}pixelphase::Array{Float64,2}
-    - diversity::Vector{Union{Nothing, Array{Float64,2}}} 
+    - diversity::Vector{Union{Nothing, Array{Float64,2}}}
 
 
 """
@@ -178,11 +176,13 @@ struct SimConfig{Fourier}
     dualroi::CartesianDomain2D
     ap::Array{Float64,2}
     mask::Array{Float64,2}
-    pixelphase::Array{Float64,2}
-    diversity::Vector{Union{Nothing, Array{Float64,2}}} # TODO add defocus calculation from focaldistance
-    end
+    phases::Dict{String,Phase}
+    diversity::Dict{String,Phase} # TODO add defocus calculation from focaldistance
+end
 
-SimConfig(args... ;  method::T = Fourier(), kwargs...) where {T<: PSFmethod} = SimConfig{T}(args..., kwargs...)
+function SimConfig(args...; method::T=Fourier(), kwargs...) where {T<:PSFmethod}
+    return SimConfig{T}(args..., kwargs...)
+end
 
 function SimConfig{Fourier}(name::String, ims::ImagingSensor, λ::Float64)
     q = upscaleFactor(ims, λ)
@@ -191,14 +191,24 @@ function SimConfig{Fourier}(name::String, ims::ImagingSensor, λ::Float64)
     roi = make_centered_domain2D(ims)
     dualroi = dualDomain(roi, q) * f * λ
     ap, mask = aperture(dualroi, d)
-    return SimConfig{Fourier}(name, ims, λ, roi, dualroi, ap, mask, zero(ap), [nothing])
+    return SimConfig{Fourier}(name, ims, λ, roi, dualroi, ap, mask, Dict(), Dict())
 end
 
-algtype(x::SimConfig{T}) where T = T() 
+algtype(x::SimConfig{T}) where {T} = T()
 
-function psf(c::SimConfig{T}; noise = 0, exposure = AutoExposure(), quantize = true ) where T
-    focalfield = toimageplane(field(c.ap,c.pixelphase), algtype(c))
-    ret = c.ims.cam(focalfield, exposure , quantize)
+aperture(c::SimConfig) = error("Implement `aperture` method for $(typeof(c))")
+aperture(c::SimConfig{Fourier}) = c.ap
+
+totalphase(c::SimConfig) = error("Implement `totalphase` method for $(typeof(c))")
+totalphase(c::SimConfig{Fourier}) = sum(collect, values(c.phases); init=zero(ap))
+
+function pupilfield(c::SimConfig)
+    return reduce(field, collect.(values(c.phases)); init=aperture(c))
+end
+
+function psf(c::SimConfig{T}; noise=0, exposure=AutoExposure(), quantize=true) where {T}
+    focalfield = toimageplane(pupilfield(c), algtype(c))
+    return ret = c.ims.cam(focalfield, exposure, quantize)
     # TODO add noise
 end
 
@@ -207,14 +217,13 @@ focaldistance(c::SimConfig) = focaldistance(c.ims)
 wavelength(c::SimConfig) = c.λ
 apdiameter(c::SimConfig) = apdiameter(c.ims)
 
-
-
 (s::SimConfig)(phase) = psf(s.ap, collect(phase))
 
-airysize(c::SimConfig) = 1.22 * wavelength(c) * focallength(c) / apdiameter(c) 
+airysize(c::SimConfig) = 1.22 * wavelength(c) * focallength(c) / apdiameter(c)
 
 import PhaseBases: ZernikeBW, ModalPhase
-ZernikeBW(c::SimConfig{Fourier}, order = 10) = ZernikeBW(c.dualroi, apdiameter(c), order)
+ZernikeBW(c::SimConfig{Fourier}, order=10) = ZernikeBW(c.dualroi, apdiameter(c), order)
 
-(ph::ModalPhase)(c::SimConfig) = set_phase!(c, ph)
-set_phase!(c::SimConfig, ph::ModalPhase) = (c.pixelphase .=  collect(ph); c)
+(ph::Phase)(c::SimConfig) = set_phase!(c, ph, "aberration")
+(ph::Phase)(c::SimConfig, phasenature::String) = set_phase!(c, ph, phasenature)
+set_phase!(c::SimConfig, ph::Phase, phasenature::Sting) = (c.phases[phasenature] = ph; c)
