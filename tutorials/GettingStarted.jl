@@ -43,12 +43,14 @@ conf1 = SimConfig("full_aperture", ims, 633nm)
 
 # This creates a simulation configuration for the generation of a PSF using [`Fourier`](@ref) methods.
 # If we check near the central pixel, we'll see that for this configuration the PSF is
-# almost one pixel wide
+# almost one pixel wide.
+# To crop central part of the image, we'll use `crop` function from `PhaseUtils` package.
 
 p = psf(conf1)
 using CairoMakie # hide
 CairoMakie.activate!(; type="png") # hide
-heatmap(rotr90(p[503:523, 631:651]); axis=(aspect=DataAspect(),))
+using PhaseUtils
+heatmap(rotr90(crop(p, 9)); axis=(aspect=DataAspect(),)) # show central 9 pixels
 
 # Indeed, the Airy pattern should be about 9 microns wide
 
@@ -60,7 +62,7 @@ lens2 = PhaseRetrieval.diaphragm(lens, 10mm)
 ims2 = PhaseRetrieval.ImagingSensor(; lens=lens2, cam=cam)
 conf2 = SimConfig("10mm aperture", ims2, 633nm)
 p2 = psf(conf2)
-heatmap(rotr90(p2[503:523, 631:651]); axis=(aspect=DataAspect(),))
+heatmap(rotr90(crop(p2, 9)); axis=(aspect=DataAspect(),))
 
 # ### Faster creation of an `ImagingSensor`
 # Some often used cameras are saved in [`camerasdict`](@ref) and [`lensesdict`](@ref) dictionaries
@@ -85,20 +87,20 @@ save("psf2.png", Gray.(p2))
 # ![](psf2.png)
 
 # Crop of the central part
-Gray.(p2[503:523, 631:651])
+Gray.(crop(p2, 21))
 
 # By default, the returned PSF is called between 0 and 1 ([`AutoExposure`](@ref) feature).
 # This can be changed by passing additional parameters to [`psf`](@ref) function.
 # Here is an example of a PSF with 4 times longer exposure:
 psf2_sat4 = psf(conf2; exposure=AutoExposure(4))
-Gray.(psf2_sat4[503:523, 631:651])
+Gray.(crop(psf2_sat4, 21))
 
 # The same psf in logarithmic scale:
-Gray.(logrescale(float.(psf2_sat4[503:523, 631:651])))
+Gray.(logrescale(float.(crop(psf2_sat4, 21))))
 
 # And without quantisation:
 psf2_sat4_float = psf(conf2; exposure=AutoExposure(4), quantize=false)
-Gray.(logrescale(psf2_sat4_float[503:523, 631:651]))
+Gray.(logrescale(crop(psf2_sat4_float, 21)))
 
 # ### Adding the phase aberration
 # Now we can add some phase to our configuration.
@@ -154,7 +156,7 @@ end;
 
 div_psf = diversed_psfs(conf2)
 for (p, d) in zip(div_psf, vcat(["0"], collect(keys(conf2.diversity))))
-    fig, ax, hm = showarray(logrescale(float(p)))
+    fig, ax, hm = showarray(logrescale(float(crop(p, 256))))
     ax.title = "PSF #" * d
     save("psf2_div_fig" * d * ".png", fig)
 end
@@ -208,16 +210,13 @@ sol = solve(pr, (alg, APparam(; maxit=50)))
 showphasetight(fftshift(angle.(sol[1])) .* conf2.mask)[1]
 
 # Let's try to have a smaller crop
-center = [size(p2)...] .÷ 2
-crophw = 64
-pcrop = p2[(CartesianIndex(center...) - CartesianIndex(crophw, crophw)):(CartesianIndex(center...) + CartesianIndex(
-    crophw - 1, crophw - 1
-))]
+cropw = 128
+pcrop = crop(p2, cropw)
 showarray(pcrop)
 
 # Construct the corresponding sim config and see how it works
 # TODO wrap all this in functions
-ims2crop = PhaseRetrieval.ImagingSensor(; lens=lens2, cam=PhaseRetrieval.roi(cam, 2crophw))
+ims2crop = PhaseRetrieval.ImagingSensor(; lens=lens2, cam=PhaseRetrieval.roi(cam, cropw))
 conf2crop = SimConfig("10mm aperture", ims2crop, 633nm)
 a = fftshift(sqrt.(Float64.(conf2crop.ap)))
 A = fftshift(sqrt.(collect(Float64, pcrop)))
