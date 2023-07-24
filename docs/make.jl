@@ -42,14 +42,13 @@ makedocs(;
         "About" => "about.md",
         "Getting Started" => "tutorials/GettingStarted.md",
         "Manual" => [
-            "Forward model" => "tutorials/Hardware.md",  
+            "Forward model" => "tutorials/Hardware.md",
             "Inverse Problem" => [
-                "Introduction" =>"Inverse.md", 
-                "Gonsalves's method" =>"tutorials/Gonsalves.md",                
-                "AP-based methods" =>"tutorials/AP.md"
-                    ]
-                ]
-                ,
+                "Introduction" => "Inverse.md",
+                "Gonsalves's method" => "tutorials/Gonsalves.md",
+                "AP-based methods" => "tutorials/AP.md",
+            ],
+        ],
     ],
 )
 

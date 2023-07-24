@@ -80,27 +80,29 @@ eltype(p2)
 # One can use `Images.jl` package to obtain images as saved by the camera:
 # The whole frame:
 using ImageCore
-Gray.(p2)
+save("psf2.png", Gray.(p2))
+
+# ![](psf2.png)
 
 # Crop of the central part
 Gray.(p2[503:523, 631:651])
 
 # By default, the returned PSF is called between 0 and 1 ([`AutoExposure`](@ref) feature).
 # This can be changed by passing additional parameters to [`psf`](@ref) function.
-# Here is an example of a psf with 4 times longer exposure:
+# Here is an example of a PSF with 4 times longer exposure:
 psf2_sat4 = psf(conf2; exposure=AutoExposure(4))
 Gray.(psf2_sat4[503:523, 631:651])
 
 # The same psf in logarithmic scale:
 Gray.(logrescale(float.(psf2_sat4[503:523, 631:651])))
 
-# And ithout quantisation:
+# And without quantisation:
 psf2_sat4_float = psf(conf2; exposure=AutoExposure(4), quantize=false)
 Gray.(logrescale(psf2_sat4_float[503:523, 631:651]))
 
 # ### Adding the phase aberration
-# Now we can add some phase to out configuration.
-# To add a modal phase represented by Zernike polynomials, we nee to
+# Now we can add some phase to our configuration.
+# To add a modal phase represented by Zernike polynomials, we need to
 # create the basis first. This creates it for the first 10 radial orders:
 
 using PhaseBases
@@ -124,9 +126,11 @@ showphasetight(phase .* conf2.mask)[1]
 # To apply this phase to the simulation configuration, apply it literally:
 phase(conf2)
 
-# and chenck the PSF
+# and check the PSF
 p2 = psf(conf2)
-Gray.(p2)
+save("psf2_ab.png", Gray.(p2));
+nothing #hide
+# ![](psf2_ab.png)
 
 # For this aberrated phase the PSF is larger and
 # more details are visible in the logarithmic scale
@@ -139,7 +143,7 @@ showarray(logrescale(float(p2)))
 p2 = conf2(phase)
 showarray(p2, :grays)
 
-# ## Adding some diversity
+# ### Adding some diversity
 # This creates a defocus of 1λ amplitude:
 defocus = 2π * z10(; n=2, m=0)
 
@@ -150,10 +154,15 @@ end;
 
 div_psf = diversed_psfs(conf2)
 for (p, d) in zip(div_psf, vcat(["0"], collect(keys(conf2.diversity))))
-    f, a, h = showarray(logrescale(float(p)))
-    a.title = "Psf #$d"
-    display(f)
+    fig, ax, hm = showarray(logrescale(float(p)))
+    ax.title = "PSF #" * d
+    save("psf2_div_fig" * d * ".png", fig)
 end
+# ![](psf2_div_fig-2.png)
+# ![](psf2_div_fig-1.png)
+# ![](psf2_div_fig0.png)
+# ![](psf2_div_fig1.png)
+# ![](psf2_div_fig2.png)
 
 # ## [Inverse problem](@id tutorial-inverse)
 # The goal of the inverse problem is from the given PSF and `SimConfig`
@@ -173,14 +182,13 @@ n = sqrt(sum(abs2, a))
 A = A ./ N .* n
 pr = TwoSetsFP(ConstrainedByAmplitude(a), FourierTransformedSet(ConstrainedByShape(A)))
 sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true), APparam(; maxϵ=0.001)))
-showphasetight(fftshift(angle.(sol[1])) .* conf2.mask);
-current_figure();
+showphasetight(fftshift(angle.(sol[1])) .* conf2.mask)[1]
 
 # This doesn't work at the moment.
 #  It might work if we let it iterate further
 # ```julia
 # sol = solve(pr, (DRAPparam(β = 0.9,keephistory = true, maxit =1500), APparam(maxϵ = 0.001)))
-# showphasetight(fftshift(angle.(sol[1])) .* conf2.mask); current_figure()
+# showphasetight(fftshift(angle.(sol[1])) .* conf2.mask)[1]
 # ```
 # ![Output after 1500 iterations](../assets/PR_DRAP1500.png)
 
@@ -188,7 +196,7 @@ current_figure();
 #  so here is the main problem of the AP-based PR algorithms --- they require quite
 #  a long time to converge, even for the noiseless data.
 
-# Here is an attempt with initial guess given by th simple subset method
+# Here is an attempt with the initial guess given by the simple subset method
 th = 0.6 * maximum(A)
 xth = copy(A)
 xth[A .> th] .= 1
@@ -197,8 +205,7 @@ showarray(xth)
 
 alg = DRAPparam(; x⁰=ifft(xth), β=0.95, keephistory=true, maxit=200)
 sol = solve(pr, (alg, APparam(; maxit=50)))
-showphasetight(fftshift(angle.(sol[1])) .* conf2.mask);
-current_figure();
+showphasetight(fftshift(angle.(sol[1])) .* conf2.mask)[1]
 
 # Let's try to have a smaller crop
 center = [size(p2)...] .÷ 2
@@ -220,20 +227,17 @@ A = A ./ N .* n
 pr = TwoSetsFP(ConstrainedByAmplitude(a), FourierTransformedSet(ConstrainedByShape(A)))
 sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true, maxit=450), APparam(; maxit=10)))
 # sol = solve(pr, (DRAPparam(β = 0.9,keephistory = true), APparam(maxϵ = 0.001)))
-showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask);
-current_figure();
+showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 
 # You can try to change slightly the values of `β` above and see that algorithm
 # might converge to another solution. This is another problem of AP-based algorithms.
 sol = solve(pr, (DRAPparam(; β=0.91, keephistory=true, maxit=450), APparam(; maxit=10)))
-showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask);
-current_figure();
+showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 
 # Douglas-Racford is known to eventully find the solution if you run it long enough:
 # For instance, starting with `b`=0.91 would require about 20000 iteration to converge:
 sol = solve(pr, (DRAPparam(; β=0.91, keephistory=true, maxit=20000), APparam(; maxit=100)))
-showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask);
-current_figure();
+showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 
 # Fortunately, julia is fast, so the calcualtions of 20K iterations take less then a minute.
 
@@ -248,8 +252,7 @@ xo = spectral_ini(pr, 0.01)
 showphasetight(angle.(fftshift(xo)) .* conf2crop.mask)[1]
 alg = DRAPparam(; x⁰=xo, β=0.99, keephistory=true, maxit=450)
 sol = solve(pr, (alg, APparam(; maxit=10)))
-showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask);
-current_figure();
+showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 
 function it!(x1, x, y)
     x1 .= ifft(y .* fft(x))
@@ -270,7 +273,7 @@ showarray(y)
 x1 = rand(ComplexF64, size(xo))
 x2 = rand(ComplexF64, size(xo))
 showarray(abs.(x1))
-# showarray(abs.(it!(x1,it!(x1,it!(x1, xo, y),y),y)))
+## showarray(abs.(it!(x1,it!(x1,it!(x1, xo, y),y),y)))
 for i in 1:5000
     it!(x1, x1, y)
 end
