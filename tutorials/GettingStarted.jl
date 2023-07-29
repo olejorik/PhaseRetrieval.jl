@@ -146,8 +146,8 @@ p2 = conf2(phase)
 showarray(p2, :grays)
 
 # ### Adding some diversity
-# This creates a defocus of 1λ amplitude:
-defocus = 2π * z10(; n=2, m=0)
+# This creates a defocus of 1λ/4 amplitude:
+defocus = 2π / 4 * z10(; n=2, m=0)
 
 # And now we add several diversities to our `conf2`
 for k in [-2, -1, 1, 2]
@@ -224,89 +224,55 @@ N = sqrt(sum(abs2, A))
 n = sqrt(sum(abs2, a))
 A = A ./ N .* n
 pr = TwoSetsFP(ConstrainedByAmplitude(a), FourierTransformedSet(ConstrainedByShape(A)))
-sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true, maxit=450), APparam(; maxit=10)))
+sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true, maxit=550), APparam(; maxit=10)))
 # sol = solve(pr, (DRAPparam(β = 0.9,keephistory = true), APparam(maxϵ = 0.001)))
 showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 
 # You can try to change slightly the values of `β` above and see that algorithm
 # might converge to another solution. This is another problem of AP-based algorithms.
-sol = solve(pr, (DRAPparam(; β=0.91, keephistory=true, maxit=450), APparam(; maxit=10)))
+sol = solve(pr, (DRAPparam(; β=0.91, keephistory=true, maxit=500), APparam(; maxit=10)))
 showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 
-# Douglas-Racford is known to eventully find the solution if you run it long enough:
+# Douglas-Rachford is known to eventully find the solution if you run it long enough:
 # For instance, starting with `b`=0.91 would require about 20000 iteration to converge:
 sol = solve(pr, (DRAPparam(; β=0.91, keephistory=true, maxit=20000), APparam(; maxit=100)))
 showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 
 # Fortunately, julia is fast, so the calcualtions of 20K iterations take less then a minute.
 
-# ## Initialisation via spectral method
-function spectral_ini(pr, th=0.2)
-    xo = copy(AlternatingProjections.amp(AlternatingProjections.generatingset(pr.B)))
-    xo[xo .< maximum(xo) * th] .= 0
-    return yo = AlternatingProjections.project(ifft(xo), pr.A)
-end
+# ## Using phase diversity
+#  To use phase-diverse Phase Retrieval, we need to construct the phase diversities for
+# the cropped configuration
+z10 = ZernikeBW(conf2crop, 10);
+# Then we know, that cropped PSFs correspond to different values of the same defocus
+defocus = 2π / 4 * z10(; n=2, m=0)
+phases = [collect(k * defocus) for k in [0, 1, 2, -2, -1]] #TODO this should be automatized
+# Crop the corresponding PSFs
+div_psf_crop = crop.(div_psf, cropw)
+save("psf_crop.png", Gray.(mosaicview(div_psf_crop; nrow=1, npad=5, fillvalue=1)))
 
-xo = spectral_ini(pr, 0.01)
-showphasetight(angle.(fftshift(xo)) .* conf2crop.mask)[1]
-alg = DRAPparam(; x⁰=xo, β=0.99, keephistory=true, maxit=450)
-sol = solve(pr, (alg, APparam(; maxit=10)))
-showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
+# ![](psf_crop.png)
 
-function it!(x1, x, y)
-    x1 .= ifft(y .* fft(x))
-    x1 .= x1 / (norm(x1))
-    return x1
-end
+# Now the set corresponding to the pupil phase will be phase-diversed set
 
-function it2!(x1, x, y)
-    x1 .= y .* x
-    x1 .= x1 ./ (norm(x1))
-    return x1
-end
+a = fftshift(sqrt.(Float64.(conf2crop.ap)))
+phases_fft = fftshift.(phases)
+A = stack(fftshift(sqrt.(collect(Float64, p))) for p in div_psf_crop)
 
-showarray(A)
-y = copy(A)
-y[y .< maximum(y) * 0.01] .= 0
-showarray(y)
-x1 = rand(ComplexF64, size(xo))
-x2 = rand(ComplexF64, size(xo))
-showarray(abs.(x1))
-## showarray(abs.(it!(x1,it!(x1,it!(x1, xo, y),y),y)))
-for i in 1:5000
-    it!(x1, x1, y)
-end
-for i in 1:5000
-    it!(x2, x2, y)
-end
-# fft!(x2)
-showarray(fftshift(abs.(x1)))
-showphasetight(fftshift(angle.(x1)) .* conf2crop.mask)[1]
-showarray(fftshift(abs.(fft(x1))))
-showarray(fftshift(abs.(x2)))
-showphasetight(fftshift(angle.(x2)) .* conf2crop.mask)[1]
-showarray(fftshift(abs.(fft(x2))))
+N = sqrt(sum(abs2, A))
+n = sqrt(sum(abs2, a))
+A = A ./ N .* n
 
-showarray(pcrop)
-alg = DRAPparam(;
-    x⁰=(x1 .- 1) ./ abs.(x1 .- 1 .+ 1e6), β=0.92, keephistory=true, maxit=2000
-)
-sol = solve(pr, (alg, APparam(; maxit=50)))
-showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask);
-current_figure();
+aset = ConstrainedByAmplitude(a)
+adiv = AlternatingProjections.PhaseDiversedSet(aset, phases_fft)
+Adiv = FourierTransformedSet(ConstrainedByShape(A), (1, 2))
 
-alg = DRAPparam(; x⁰=(x2 .- 1) ./ abs.(x2 .- 1 .+ 1e6), β=1, keephistory=true, maxit=2000)
-sol = solve(pr, (alg, APparam(; maxit=50)))
-showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask);
-current_figure();
+# As expected, using phase diversities accelerates the phase retrieval a lot
+pr = TwoSetsFP(adiv, Adiv)
+sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true, maxit=50), APparam(; maxit=50)))
+showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2crop.mask)[1]
 
-# Simple subset method
-th = 0.2
-xth = copy(A)
-xth[A .> th] .= 1
-xth[A .<= th] .= 0
-
-alg = DRAPparam(; x⁰=ifft(xth), β=0.91, keephistory=true, maxit=10000)
-sol = solve(pr, (alg, APparam(; maxit=50)))
-showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask);
-current_figure();
+# And now it should be also less sensitive to the parameter choice.
+# But they do affect the speed of the convergence
+sol = solve(pr, (DRAPparam(; β=0.5, keephistory=true, maxit=50), APparam(; maxit=50)))
+showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2crop.mask)[1]
