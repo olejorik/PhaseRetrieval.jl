@@ -276,3 +276,93 @@ showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2crop.mask)[1]
 # But they do affect the speed of the convergence
 sol = solve(pr, (DRAPparam(; β=0.5, keephistory=true, maxit=50), APparam(; maxit=50)))
 showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2crop.mask)[1]
+
+# Try to unwrap the phase
+ph = fftshift(angle.(sol[1][:, :, 1]))
+ph_u = unwrap_LS(ph, conf2crop.ap)
+fig, ax, hm = showarray(bboxview(ph_u .* conf2crop.mask))
+Colorbar(fig[1, 2], hm)
+fig
+
+# Now the phase in unwrapped and can be decomposed by the basis functions
+restored_coef = PhaseBases.decompose(ph_u, z10)
+#  and compare the restored coefficients with the original ones
+fig = Figure();
+Axis(fig[1, 1]);
+scatter!(phase.coef)
+scatter!(restored_coef)
+fig
+
+# The error is mainly present in the high rder polynomials, which might
+# be an artifact of the decompostion (mumerical integration) with low resolution.
+#  We can compare the phases themselves
+ph_u .-= restored_coef[1]
+phase_crop = ModalPhase(phase.coef, z10)
+err = (ph_u .- phase_crop)
+fig, ax, hm = showarray(bboxview(err .* conf2crop.mask))
+Colorbar(fig[1, 2], hm)
+fig
+
+# Try with high-res phase
+z10 = ZernikeBW(conf2, 10);
+defocus = 2π / 4 * z10(; n=2, m=0)
+phases = [collect(k * defocus) for k in [0, 1, 2, -2, -1]] #TODO this should be automatized
+
+a = fftshift(sqrt.(Float64.(conf2.ap)))
+phases_fft = fftshift.(phases)
+A = stack(fftshift(sqrt.(collect(Float64, p))) for p in div_psf)
+
+N = sqrt(sum(abs2, A))
+n = sqrt(sum(abs2, a))
+A = A ./ N .* n
+
+aset = ConstrainedByAmplitude(a)
+adiv = AlternatingProjections.PhaseDiversedSet(aset, phases_fft)
+Adiv = FourierTransformedSet(ConstrainedByShape(A), (1, 2))
+
+pr = TwoSetsFP(adiv, Adiv)
+sol = solve(pr, (DRAPparam(; β=0.5, keephistory=true, maxit=50), APparam(; maxit=50)))
+showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2.mask)[1]
+
+# We again unwrap the phase
+ph = fftshift(angle.(sol[1][:, :, 1]))
+ph_u = unwrap_LS(ph, conf2.ap)
+fig, ax, hm = showarray(bboxview(ph_u .* conf2.mask))
+Colorbar(fig[1, 2], hm)
+fig
+
+# Now the phase in unwrapped and can be decomposed by the basis functions
+restored_coef = PhaseBases.decompose(ph_u, z10)
+#  and compare the restored coefficients with the original ones
+fig = Figure();
+Axis(fig[1, 1]);
+scatter!(phase.coef)
+scatter!(restored_coef)
+fig
+
+# The error is error is greatly reduced.
+# Here is the plot of the coefficient differences (with piston ignored)
+err_coef = (phase.coef .- restored_coef)[2:end]
+fig, ax, sc = barplot(err_coef)
+ax.title = "RMS error = $(norm(err_coef))"
+fig
+#  We can compare the phases themselves
+ph_u .-= restored_coef[1]
+err = (ph_u .- phase)
+fig, ax, hm = showarray(bboxview(err .* conf2.mask))
+ax.aspect = 1
+Colorbar(fig[1, 2], hm)
+ax.title = "Phase rmse = $(PhaseUtils.maskedphasermse(ph_u, phase, conf2.ap)/(2π)) λ"
+fig
+
+# The quite big error in the coefficient restoration compared with a
+# the erro magnitude in the phases can be expained by the numerical error
+# of decomposiotion by Zernikes. Here is , for instance,
+# result of decompostion of the input phase:
+rest = PhaseBases.decompose(collect(phase), z10)
+scatter(phase.coef)
+scatter!(rest)
+current_figure()
+
+# But the error grows witht the index of the Zernike:
+scatter(rest .- phase.coef; axis=(title="RMS error = $( norm(rest .- phase.coef))",))
