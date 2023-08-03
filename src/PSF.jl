@@ -30,7 +30,7 @@ AutoExposure() = AutoExposure(1)
 myabs2(x) = abs(x)^2
 # myabs2(x) = abs2(x)
 
-field(amplitude, phase) = amplitude .* exp.(1im * phase)
+field(amplitude, phase) = amplitude .* exp.(1im * collect(phase)) # use collect here for ModalPhase
 
 """
     psf(amplitude, phase) -> psfimage
@@ -224,7 +224,7 @@ aperture(c::SimConfig) = error("Implement `aperture` method for $(typeof(c))")
 aperture(c::SimConfig{Fourier}) = c.ap
 
 totalphase(c::SimConfig) = error("Implement `totalphase` method for $(typeof(c))")
-totalphase(c::SimConfig{Fourier}) = sum(collect, values(c.phases); init=zero(ap))
+totalphase(c::SimConfig{Fourier}) = sum(collect, values(c.phases); init=zero(aperture(c)))
 
 function pupilfield(c::SimConfig)
     return reduce(field, collect.(values(c.phases)); init=aperture(c))

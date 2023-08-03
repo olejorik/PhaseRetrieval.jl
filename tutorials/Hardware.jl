@@ -136,7 +136,7 @@ keys(camerasdict)
 
 # So the imaging sensor can be created as
 
-ims = ImagingSensor(; cam=cam = camerasdict["UI1240"], lens=lensesdict["F300A25"])
+ims = ImagingSensor(; cam=camerasdict["UI1240"], lens=lensesdict["F300A25"])
 
 #
 # `SimConfig` contains the necessary information for simulations.
@@ -166,7 +166,7 @@ showphasetight(basis.elements[15] .* conf2.mask)[1]
 
 # This is a combination of some low-order Zernike polynomials
 
-phase = compose(basis, [4, 6, 15, 16], [2, 1, 0.4, 0.3] * 2π)
+phase = ModalPhase([4, 6, 15, 16], [2, 1, 0.4, 0.3] * 2π, basis)
 fig = Figure();
 showphasetight(phase .* conf2.mask, fig)
 fig
