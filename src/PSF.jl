@@ -198,6 +198,26 @@ function SimConfig{Fourier}(name::String, ims::ImagingSensor, λ::Float64)
     return SimConfig{Fourier}(name, ims, λ, roi, dualroi, ap, mask, Dict(), Dict())
 end
 
+# Pretty printing
+function show(io::IO, x::SimConfig)
+    return print(
+        io,
+        """
+        Simulation configuration with the properties:
+
+        name:\t\t $(x.name)
+        wavelength:\t $(x.λ)
+        $(x.ims)
+        with wavefront aberrrations: $(keys(x.phases))
+        with phase diversities $(keys(x.diversity))
+        """,
+        # "PSF simulation configuration with the properties:
+
+        # with wavefront aberrrations: $(x.phases)\n
+        # with phase diversities ($x.diversity)\n",
+    )
+end
+
 algtype(x::SimConfig{T}) where {T} = T()
 
 aperture(c::SimConfig) = error("Implement `aperture` method for $(typeof(c))")
