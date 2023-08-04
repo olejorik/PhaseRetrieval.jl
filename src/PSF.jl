@@ -142,9 +142,16 @@ julia> PhaseRetrieval.intensity(imf) .|> round
 """
 intensity(field) = mappedarray(myabs2, field)
 
-function (cam::CameraChip)(field, exposure::PSFExposure=AutoExposure(), quantize=true)
+function (cam::CameraChip)(
+    field, exposure::PSFExposure=AutoExposure(), quantize=true, noise=(0, 0)
+)
     imf = intensity(field)
     maxint = maximum(imf) / exposure.scale
+    if noise != (0, 0) # TODO add docs that noise is scaled to the smallest bit
+        imf = mappedarray(
+            x -> x + maxint / (2^cam.bitdepth) * (randn() * noise[1] + noise[2]), imf
+        )
+    end
     storagetype = quantize ? getstoragetype(cam) : Float64
     # storagetype = N4f12 #debug -- it's three times faster compared with the unnknown type
     return mappedarray(scaleminmax(storagetype, 0, maxint), imf)
@@ -230,19 +237,24 @@ function pupilfield(c::SimConfig)
     return reduce(field, collect.(values(c.phases)); init=aperture(c))
 end
 
-function psf(c::SimConfig{T}; noise=0, exposure=AutoExposure(), quantize=true) where {T}
+function psf(
+    c::SimConfig{T}; noise=(1, 0), exposure=AutoExposure(), quantize=true
+) where {T}
     focalfield = toimageplane(pupilfield(c), algtype(c))
-    return ret = c.ims.cam(focalfield, exposure, quantize)
+    return ret = c.ims.cam(focalfield, exposure, quantize, noise)
     # TODO add noise
 end
 
 function diversed_psfs(
-    c::SimConfig{T}; noise=0, exposure=AutoExposure(), quantize=true
+    c::SimConfig{T}; noise=(0, 0), exposure=AutoExposure(), quantize=true
 ) where {T}
     div_fields = vcat(
         [pupilfield(c)], [field(pupilfield(c), collect(d)) for d in values(c.diversity)]
     )
-    return [c.ims.cam(toimageplane(f, algtype(c)), exposure, quantize) for f in div_fields]
+    return [
+        c.ims.cam(toimageplane(f, algtype(c)), exposure, quantize, noise) for
+        f in div_fields
+    ]
 end
 
 focallength(c::SimConfig) = focallength(c.ims)
@@ -260,3 +272,13 @@ ZernikeBW(c::SimConfig{Fourier}, order=10) = ZernikeBW(c.dualroi, apdiameter(c),
 (ph::Phase)(c::SimConfig) = set_phase!(c, ph, "aberration")
 (ph::Phase)(c::SimConfig, phasenature::String) = set_phase!(c, ph, phasenature)
 set_phase!(c::SimConfig, ph::Phase, phasenature::String) = (c.phases[phasenature] = ph; c)
+
+# TODO think how to restructure all this
+# utils add-on
+function ap_ratio(c::SimConfig)
+    return ap_ratio(c.ims, c.λ)
+end
+
+function upscaleFactor(c::SimConfig)
+    return upscaleFactor(c.ims, c.λ)
+end

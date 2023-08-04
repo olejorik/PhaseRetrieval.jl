@@ -208,20 +208,12 @@ function ap_ratio(ims::ImagingSensor, λ)
     return ap_ratio(ims.cam.pixelsize, ims.lens.focallength, ims.lens.aperture, λ)
 end
 
-function ap_ratio(c::SimConfig)
-    return ap_ratio(c.ims, c.λ)
-end
-
 function upscaleFactor(s, f, apertureD, λ)
     return ceil(Int, ap_ratio(s, f, apertureD, λ))
 end
 
 function upscaleFactor(ims::ImagingSensor, λ)
     return upscaleFactor(ims.cam.pixelsize, ims.lens.focallength, ims.lens.aperture, λ)
-end
-
-function upscaleFactor(c::SimConfig)
-    return upscaleFactor(c.ims, c.λ)
 end
 
 function make_centered_domain2D(ims::ImagingSensor)
