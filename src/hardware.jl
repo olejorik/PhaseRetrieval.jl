@@ -139,7 +139,9 @@ See also [`diaphragm`](@ref), [`lensesdict`](@ref).
 # Example
 ```jldoctest
 julia> lens = ImagingLens(300mm, 25mm)
-Imaging Lens with f=300.0 mm and D=25.0 mm
+Imaging Lens with
+  f:	300.0 mm and
+  D:	25.0 mm
 ```
 """
 Base.@kwdef struct ImagingLens
@@ -157,7 +159,9 @@ Diaphragm can be larger than the lens diameter (there is no "hardware limitation
 # Example
 ```jldoctest
 julia> diaphragm(ImagingLens(300mm, 25mm), 10mm)
-Imaging Lens with f=300.0 mm and D=10.0 mm
+Imaging Lens with
+  f:	300.0 mm and
+  D:	10.0 mm
 ```
 
 """
@@ -203,16 +207,34 @@ julia> ImagingSensor(lens = ImagingLens(300mm, 25mm),
                channelbitdepth=8
                )
            )
-Imaging Sensor made with an Imaging Lens with f=300.0 mm and D=25.0 mm
- and a Camera with square pixel 5.2 μm, (1280, 1024) frame and a 8/8 bit/channel output.
+Imaging Sensor made with:
+  Imaging Lens with
+  f:	300.0 mm and
+  D:	25.0 mm and
+  Camera with
+	square pixel 5.2 μm,
+	(1280, 1024) frame and
+	8/8 bit/channel output.
 
 julia> diaphragm(ImagingSensor(lens = lensesdict["F300A25"], cam= camerasdict["UI1540"]), 10mm)
-Imaging Sensor made with an Imaging Lens with f=300.0 mm and D=10.0 mm
- and a Camera with square pixel 5.2 μm, (1280, 1024) frame and a 8/8 bit/channel output.
+Imaging Sensor made with:
+  Imaging Lens with
+  f:	300.0 mm and
+  D:	10.0 mm and
+  Camera with
+	square pixel 5.2 μm,
+	(1280, 1024) frame and
+	8/8 bit/channel output.
 
 julia> ImagingSensor("F300A25",  "UI1540")
-Imaging Sensor made with an Imaging Lens with f=300.0 mm and D=25.0 mm
- and a Camera with square pixel 5.2 μm, (1280, 1024) frame and a 8/8 bit/channel output.
+Imaging Sensor made with:
+  Imaging Lens with
+  f:	300.0 mm and
+  D:	25.0 mm and
+  Camera with
+	square pixel 5.2 μm,
+	(1280, 1024) frame and
+	8/8 bit/channel output.
 ```
 
 See also `focallength`, `focaldistance`, `apdiameter`.
@@ -274,6 +296,8 @@ focallength(ims::ImagingSensor) = focallength(ims.lens)
 focallength(len::ImagingLens) = len.focallength
 apdiameter(ims::ImagingSensor) = apdiameter(ims.lens)
 apdiameter(len::ImagingLens) = len.aperture
+numericalaperture(len::ImagingLens) = asin(apdiameter(len) / focallength(len) / 2)
+numericalaperture(ims::ImagingSensor) = numericalaperture(ims.lens)
 
 # Pretty printing
 function show(io::IO, x::ImagingLens)

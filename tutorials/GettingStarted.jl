@@ -149,9 +149,12 @@ showarray(p2, :grays)
 # This creates a defocus of 1λ/4 amplitude:
 defocus = 2π / 4 * z10(; n=2, m=0)
 
+#  Or we could better create diversities corressponding in the depth-of-focus lentgths
+defocus = ZonalPhase(throughfocus(conf1, doflength(conf1)))
+
 # And now we add several diversities to our `conf2`
 for k in [-2, -1, 1, 2]
-    conf2.diversity[string(k)] = k * defocus
+    conf2.diversity[string(k)] = P = k * defocus
 end;
 
 div_psf = diversed_psfs(conf2)
@@ -245,7 +248,8 @@ showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 # the cropped configuration
 z10 = ZernikeBW(conf2crop, 10);
 # Then we know, that cropped PSFs correspond to different values of the same defocus
-defocus = 2π / 4 * z10(; n=2, m=0)
+# # defocus = 2π / 4 * z10(; n=2, m=0)
+defocus = ZonalPhase(throughfocus(conf2crop, doflength(conf2crop)))
 phases = [collect(k * defocus) for k in [0, 1, 2, -2, -1]] #TODO this should be automatized
 # Crop the corresponding PSFs
 div_psf_crop = crop.(div_psf, cropw)
@@ -306,6 +310,7 @@ fig
 # Try with high-res phase
 z10 = ZernikeBW(conf2, 10);
 defocus = 2π / 4 * z10(; n=2, m=0)
+defocus = ZonalPhase(throughfocus(conf2, doflength(conf2)))
 phases = [collect(k * defocus) for k in [0, 1, 2, -2, -1]] #TODO this should be automatized
 
 a = fftshift(sqrt.(Float64.(conf2.ap)))

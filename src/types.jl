@@ -1,6 +1,5 @@
 
-
-abstract type Domain{N}  end
+abstract type Domain{N} end
 
 """
     PDplan(plan, diversity)

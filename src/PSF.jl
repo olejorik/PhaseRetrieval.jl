@@ -3,7 +3,7 @@ using FFTW
 using MappedArrays
 
 export AutoExposure, PSFmethod, Fourier, PSFExposure
-export wavelength, airysize, diversed_psfs
+export wavelength, airysize, diversed_psfs, throughfocus, doflength
 
 abstract type PSFmethod end
 
@@ -282,3 +282,17 @@ end
 function upscaleFactor(c::SimConfig)
     return upscaleFactor(c.ims, c.λ)
 end
+
+"""
+    σz(σx, σy)
+
+Calculate σz from the values of the other sines
+"""
+σz(σx, σy) = sqrt(1 - σx^2 - σy^2)
+function throughfocus(conf::SimConfig)
+    ddom = conf.dualroi * (1 / focallength(conf))
+    return collect(σz(σ...) - 1 for σ in ddom)
+end
+
+throughfocus(conf::SimConfig, Δz) = throughfocus(conf::SimConfig) .* (Δz * 2π / conf.λ)
+doflength(conf::SimConfig) = conf.λ / (numericalaperture(conf.ims)^2)
