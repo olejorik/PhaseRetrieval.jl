@@ -166,13 +166,14 @@ end
 `SimConfig{Fourier}` contains the following fields:
 
     - name::String
-    - ims::PhaseRetrieval.ImagingSensor
-    - λ::Float64
-    - roi::CartesianDomain2D
-    - dualroi::CartesianDomain2D
-    - ap::Array{Float64,2}
-    - mask::Array{Float64,2}pixelphase::Array{Float64,2}
-    - diversity::Vector{Union{Nothing, Array{Float64,2}}}
+    - ims::PhaseRetrieval.ImagingSensor -- imaging sensor used in the configuration
+    - λ::Float64 -- light wavelength
+    - roi::CartesianDomain2D -- coordiantes in the image plane
+    - dualroi::CartesianDomain2D -- coordinates in the pupil plane
+    - ap::Array{Float64,2} -- amplitude of the pupil function
+    - mask::Array{Float64,2} -- array of NaNs and 1s defining the aperture support
+    - phases::Dict{String, PhaseBases.Phase} -- phase aberrrations present in the config
+    - diversity::Dict{String, PhaseBases.Phase} -- phase diversities used for PSF generation
 
 
 """
@@ -286,9 +287,16 @@ end
 """
     σz(σx, σy)
 
-Calculate σz from the values of the other sines
+Calculate σz from the values of the other cosines
 """
 σz(σx, σy) = sqrt(1 - σx^2 - σy^2)
+
+"""
+    throughfocus(conf::SimConfig, Δz)
+
+Calculate the phase aberration (defocus) corresponding to the axial disaplcament on length
+`Δz`.
+"""
 function throughfocus(conf::SimConfig)
     ddom = conf.dualroi * (1 / focallength(conf))
     return collect(σz(σ...) - 1 for σ in ddom)

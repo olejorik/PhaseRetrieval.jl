@@ -4,7 +4,7 @@ using Statistics
 using FFTW
 using SampledDomains: CartesianDomain2D, dualRange, dualDomain
 import Base: show
-import SampledDomains: make_centered_domain2D
+import SampledDomains: make_centered_domain2D, getranges
 using PhaseBases
 using ImageCore
 
@@ -32,6 +32,7 @@ include("hardware.jl")
 include("utils.jl")
 include("ShackHartmann/SHphase.jl")
 include("PSF.jl")
+include("VectorialPSF.jl")
 
 include("PRproblem.jl")
 
