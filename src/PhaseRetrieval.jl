@@ -22,7 +22,7 @@ import AlternatingProjections:
 using AlternatingProjections
 
 export SHdiversity
-export psf, phwrap, subpsf, logrescale
+export psf, subpsf, logrescale
 export removepiston, removetiptilt, twinphase
 
 # export Linear
