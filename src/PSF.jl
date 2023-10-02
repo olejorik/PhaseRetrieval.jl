@@ -25,6 +25,10 @@ struct AutoExposure <: PSFExposure
     scale::Float64
 end
 
+struct GainExposure <: PSFExposure
+    scale::Float64
+end
+
 AutoExposure() = AutoExposure(1)
 
 myabs2(x) = abs(x)^2
@@ -141,6 +145,7 @@ julia> PhaseRetrieval.intensity(imf) .|> round
 
 """
 intensity(field) = mappedarray(myabs2, field)
+intensity(fields::Vector{T}) where {T<:Array} = sum(intensity, fields)
 
 function (cam::CameraChip)(
     field, exposure::PSFExposure=AutoExposure(), quantize=true, noise=(0, 0)
@@ -256,6 +261,33 @@ function diversed_psfs(
         c.ims.cam(toimageplane(f, algtype(c)), exposure, quantize, noise) for
         f in div_fields
     ]
+end
+
+"""
+    incoherent_psf(
+    c::SimConfig{T},
+    amp_diversity::Vector;
+    noise=(1, 0),
+    exposure=AutoExposure(),
+    quantize=true,
+) where {T}
+
+Calculate incoherent sum of PSFs formed by amplitude diversities.
+"""
+function incoherent_psf(
+    c::SimConfig{T},
+    amp_diversity::Vector;
+    noise=(1, 0),
+    exposure=AutoExposure(),
+    quantize=true,
+) where {T}
+    ret = zero(aperture(c))
+    focalfields = [toimageplane(a .* pupilfield(c), algtype(c)) for a in amp_diversity]
+
+    ret = c.ims.cam(focalfields, exposure, quantize, noise)
+    # TODO add noise
+
+    return collect(c.ims.cam(focalfields, exposure, quantize, noise))
 end
 
 focallength(c::SimConfig) = focallength(c.ims)

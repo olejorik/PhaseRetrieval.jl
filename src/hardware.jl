@@ -296,7 +296,7 @@ focallength(ims::ImagingSensor) = focallength(ims.lens)
 focallength(len::ImagingLens) = len.focallength
 apdiameter(ims::ImagingSensor) = apdiameter(ims.lens)
 apdiameter(len::ImagingLens) = len.aperture
-numericalaperture(len::ImagingLens) = asin(apdiameter(len) / focallength(len) / 2)
+numericalaperture(len::ImagingLens) = apdiameter(len) / focallength(len) / 2
 numericalaperture(ims::ImagingSensor) = numericalaperture(ims.lens)
 
 # Pretty printing

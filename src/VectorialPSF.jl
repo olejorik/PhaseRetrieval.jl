@@ -1,7 +1,8 @@
 function get_cosines(conf::SimConfig)
     ddom = conf.dualroi * (1 / focallength(conf))
     σx, σy = getranges(ddom)
-    σs = (σz(σ...) - 1 for σ in ddom)
+    # σs = (σz(σ...) - 1 for σ in ddom)
+    σs = (σz(σ...) for σ in ddom)
     return (σx=σx, σy=σy, σz=σs)
 end
 
@@ -22,9 +23,11 @@ function get_polarization_magnitudes(conf::SimConfig)
             eyx[i] = -x * y * zfactor
             ezx[i] = -x
             exy[i] = -x * y * zfactor
-            eyy[i] = 1 - x^2 * zfactor
+            eyy[i] = 1 - y^2 * zfactor
             ezy[i] = -y
         end
     end
     return (exx=exx, eyx=eyx, ezx=ezx, exy=exy, eyy=eyy, ezy=ezy)
 end
+
+# struct VectorFourier <: PSFmethod end

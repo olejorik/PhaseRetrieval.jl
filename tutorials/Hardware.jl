@@ -185,3 +185,28 @@ showarray(PhaseRetrieval.logrescale(p2))
 
 p2 = conf2(phase)
 showarray(p2, :grays)
+
+# ## High NA
+camHR = CameraChip(;
+    pixelsize=0.05um, imagesize=(1280, 1024), bitdepth=8, channelbitdepth=8
+)
+lensHR = ImagingLens(15mm, 25mm)
+imsHR = ImagingSensor(; lens=lensHR, cam=camHR)
+PhaseRetrieval.numericalaperture(imsHR)
+
+# Now we can save all these definitions in a simulation config [`SimConfig`](@ref). We also specify the wavelength here:
+
+confHR = SimConfig("High NA", imsHR, 633nm)
+
+# Scalar PSF
+pscalar = psf(confHR.ap)
+heatmap(rotr90(pscalar[503:523, 631:651]); axis=(aspect=DataAspect(),))
+
+# Compare it with a PSF with linear polarisation in x direction.
+# It should be narrow in y.
+polmod = PhaseRetrieval.get_polarization_magnitudes(confHR);
+
+pvector = PhaseRetrieval.incoherent_psf(confHR, [p for p in polmod[[:exx, :eyx, :ezx]]])
+heatmap(rotr90(pvector[503:523, 631:651]); axis=(aspect=DataAspect(),))
+
+# While we see the elliptical structure, it's not narrower in y, as in Mansuripur's example.
