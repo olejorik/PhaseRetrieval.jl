@@ -8,17 +8,22 @@ export wavelength, airysize, diversed_psfs, throughfocus, doflength
 abstract type PSFmethod end
 
 """
-    Fourier()
+    Fourier(A::Array)
 
 FFT-based method of simulation of a PSF.
 
 See also `psf`, `SimConfig`.
 """
-struct Fourier <: PSFmethod end
+struct Fourier <: PSFmethod
+    fplan::FFTW.FFTWPlan{ComplexF64,-1,false}
+end
+
+Fourier(A::Array) = Fourier(FFTW.plan_fft(A))
+
 struct ChirpZ <: PSFmethod end
 struct MVM <: PSFmethod end
 
-const default_forward_method = Fourier()
+const default_forward_method = Fourier
 
 abstract type PSFExposure end
 struct AutoExposure <: PSFExposure
@@ -111,8 +116,8 @@ Available methods:
  - `ChirpZ`  -- not implemented
  - `MVM` -- not implemented
 """
-toimageplane(field, ::Fourier) = fftshift(fft(ifftshift(field)))
-toimageplane(field) = toimageplane(field, Fourier())
+toimageplane(field, alg::Fourier) = fftshift(alg.fplan * ifftshift(field))
+toimageplane(field) = toimageplane(field, Fourier(field))
 
 """
     intensity(field)
@@ -179,10 +184,11 @@ end
     - mask::Array{Float64,2} -- array of NaNs and 1s defining the aperture support
     - phases::Dict{String, PhaseBases.Phase} -- phase aberrrations present in the config
     - diversity::Dict{String, PhaseBases.Phase} -- phase diversities used for PSF generation
+    - alg::PSFmethod -- method used for PSF calculation
 
 
 """
-struct SimConfig{Fourier}
+struct SimConfig{T<:PSFmethod}
     name::String
     ims::ImagingSensor
     λ::Float64
@@ -193,22 +199,35 @@ struct SimConfig{Fourier}
     mask::Array{Float64,2}
     phases::Dict{String,Phase}
     diversity::Dict{String,Phase} # TODO add defocus calculation from focaldistance
+    alg::T
 end
 
-function SimConfig(
-    args...; method::T=default_forward_method, kwargs...
-) where {T<:PSFmethod}
-    return SimConfig{T}(args..., kwargs...)
-end
+# function SimConfig(
+#     args...; method::T=default_forward_method, kwargs...
+# ) where {T<:PSFmethod}
+#     return SimConfig{T}(args..., kwargs...)
+# end
 
-function SimConfig{Fourier}(name::String, ims::ImagingSensor, λ::Float64)
+function SimConfig(name::String, ims::ImagingSensor, λ::Float64)
     q = upscaleFactor(ims, λ)
     f = ims.lens.focallength
     d = ims.lens.aperture
     roi = make_centered_domain2D(ims)
     dualroi = dualDomain(roi, q) * f * λ
     ap, mask = aperture(dualroi, d)
-    return SimConfig{Fourier}(name, ims, λ, roi, dualroi, ap, mask, Dict(), Dict())
+    alg = Fourier(ap)
+    return SimConfig(
+        name,
+        ims,
+        λ,
+        roi,
+        dualroi,
+        ap,
+        mask,
+        Dict{String,Phase}(),
+        Dict{String,Phase}(),
+        alg,
+    )
 end
 
 # Pretty printing
@@ -231,7 +250,7 @@ function show(io::IO, x::SimConfig)
     )
 end
 
-algtype(x::SimConfig{T}) where {T} = T()
+algtype(x::SimConfig{T}) where {T} = T
 
 aperture(c::SimConfig) = error("Implement `aperture` method for $(typeof(c))")
 aperture(c::SimConfig{Fourier}) = c.ap
@@ -282,7 +301,7 @@ function incoherent_psf(
     quantize=true,
 ) where {T}
     ret = zero(aperture(c))
-    focalfields = [toimageplane(a .* pupilfield(c), algtype(c)) for a in amp_diversity]
+    focalfields = [toimageplane(a .* pupilfield(c), c.alg) for a in amp_diversity]
 
     ret = c.ims.cam(focalfields, exposure, quantize, noise)
     # TODO add noise
