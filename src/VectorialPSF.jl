@@ -6,9 +6,7 @@ function get_cosines(conf::SimConfig)
     return (σx=σx, σy=σy, σz=σs)
 end
 
-function get_polarization_magnitudes(conf::SimConfig)
-    ddom = conf.dualroi * (1 / focallength(conf))
-    inaperture = (!isnan).(conf.mask)
+function get_polarization_magnitudes(ddom::CartesianDomain2D, inaperture::BitArray)
     # σx, σy = getranges(ddom)
     exx = Array{Float64}(undef, size(ddom))
     eyx = Array{Float64}(undef, size(ddom))
@@ -30,4 +28,56 @@ function get_polarization_magnitudes(conf::SimConfig)
     return (exx=exx, eyx=eyx, ezx=ezx, exy=exy, eyy=eyy, ezy=ezy)
 end
 
-# struct VectorFourier <: PSFmethod end
+function get_polarization_magnitudes(conf::SimConfig)
+    ddom = conf.dualroi * (1 / focallength(conf))
+    inaperture = (!isnan).(conf.mask)
+    return get_polarization_magnitudes(ddom, inaperture)
+end
+
+struct FourierVectorial <: PSFmethod
+    fplan::FFTW.FFTWPlan{ComplexF64,-1,false}
+    modulations
+end
+
+function FourierVectorial(dom::CartesianDomain2D, mask::Array)
+    pf = FFTW.plan_fft(Array{ComplexF64}(undef, size(dom)))
+    inaperture = (!isnan).(mask)
+    return FourierVectorial(pf, get_polarization_magnitudes(dom, inaperture))
+end
+
+function SimConfig{FourierVectorial}(name::String, ims::ImagingSensor, λ::Float64)
+    q = upscaleFactor(ims, λ)
+    f = ims.lens.focallength
+    d = ims.lens.aperture
+    roi = make_centered_domain2D(ims)
+    dualroi = dualDomain(roi, q) * f * λ
+    ap, mask = aperture(dualroi, d)
+    alg = FourierVectorial(dualroi, mask)
+    return SimConfig(
+        name,
+        ims,
+        λ,
+        roi,
+        dualroi,
+        ap,
+        mask,
+        Dict{String,Phase}(),
+        Dict{String,Phase}(),
+        alg,
+    )
+end
+
+function toimageplane(field, alg::FourierVectorial, pol_coeffs)
+    return [
+        fftshift(alg.fplan * ifftshift((p * m) .* field)) for
+        (m, p) in zip(alg.modulations, pol_coeffs)
+    ]
+end
+
+function toimageplane(field, alg::FourierVectorial)
+    return toimageplane(field, alg::FourierVectorial, ones(6))
+end
+
+aperture(c::SimConfig{FourierVectorial}) = c.ap
+
+export FourierVectorial

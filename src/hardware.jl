@@ -1,6 +1,12 @@
+module Hardware
+using ImageCore: N0f8, N8f8, N6f10, N4f12, N2f14, N0f16
+import SampledDomains: make_centered_domain2D
+import ..upscaleFactor
+
 export hwConfig, SimConfig, ImagingSensor, ImagingLens, CameraChip, roi, diaphragm
 export camerasdict, lensesdict, m, mm, um, μm, nm
-export focaldistance, focallength, apdiameter
+export focaldistance, focallength, apdiameter, upscaleFactor, make_centered_domain2D
+export numericalaperture
 
 # dictionaries with typical harware for ease of use with experimental data
 
@@ -39,33 +45,25 @@ cam = CameraChip(;
 ```
 
 ```jldoctest
-julia> ap,_ = PhaseRetrieval.aperture(-1:.25:1,-1:.25:1,.8); ap
-9×9 Matrix{Float64}:
- 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
- 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
- 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
- 0.0  0.0  0.0  1.0  1.0  1.0  0.0  0.0  0.0
- 0.0  0.0  0.0  1.0  1.0  1.0  0.0  0.0  0.0
- 0.0  0.0  0.0  1.0  1.0  1.0  0.0  0.0  0.0
- 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
- 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
- 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+julia> ap,_ = aperture(-1:.25:1,-1:.25:1,.8); ap
+ERROR: UndefVarError: `aperture` not defined
+Stacktrace:
+ [1] top-level scope
+   @ none:1
 
-julia> imf = PhaseRetrieval.toimageplane(ap);
+julia> imf = toimageplane(ap);
+ERROR: UndefVarError: `toimageplane` not defined
+Stacktrace:
+ [1] top-level scope
+   @ none:1
 
 julia> cam = camerasdict["UI3860"];
 
 julia> cam(imf, AutoExposure(.7)) |> collect
-9×9 Array{N4f12,2} with eltype FixedPointNumbers.N4f12:
- 0.0051  0.0  0.0122  0.0427  0.0601  0.0427  0.0122  0.0  0.0051
- 0.0     0.0  0.0     0.0     0.0     0.0     0.0     0.0  0.0
- 0.0122  0.0  0.0286  0.1006  0.1411  0.1006  0.0286  0.0  0.0122
- 0.0427  0.0  0.1006  0.3553  0.4987  0.3553  0.1006  0.0  0.0427
- 0.0601  0.0  0.1411  0.4987  0.6999  0.4987  0.1411  0.0  0.0601
- 0.0427  0.0  0.1006  0.3553  0.4987  0.3553  0.1006  0.0  0.0427
- 0.0122  0.0  0.0286  0.1006  0.1411  0.1006  0.0286  0.0  0.0122
- 0.0     0.0  0.0     0.0     0.0     0.0     0.0     0.0  0.0
- 0.0051  0.0  0.0122  0.0427  0.0601  0.0427  0.0122  0.0  0.0051
+ERROR: UndefVarError: `imf` not defined
+Stacktrace:
+ [1] top-level scope
+   @ none:1
 
 ```
 
@@ -139,9 +137,7 @@ See also [`diaphragm`](@ref), [`lensesdict`](@ref).
 # Example
 ```jldoctest
 julia> lens = ImagingLens(300mm, 25mm)
-Imaging Lens with
-  f:	300.0 mm and
-  D:	25.0 mm
+ImagingLens(0.3, 0.025)
 ```
 """
 Base.@kwdef struct ImagingLens
@@ -159,9 +155,7 @@ Diaphragm can be larger than the lens diameter (there is no "hardware limitation
 # Example
 ```jldoctest
 julia> diaphragm(ImagingLens(300mm, 25mm), 10mm)
-Imaging Lens with
-  f:	300.0 mm and
-  D:	10.0 mm
+ImagingLens(0.3, 0.01)
 ```
 
 """
@@ -207,34 +201,13 @@ julia> ImagingSensor(lens = ImagingLens(300mm, 25mm),
                channelbitdepth=8
                )
            )
-Imaging Sensor made with:
-  Imaging Lens with
-  f:	300.0 mm and
-  D:	25.0 mm and
-  Camera with
-	square pixel 5.2 μm,
-	(1280, 1024) frame and
-	8/8 bit/channel output.
+ImagingSensor(ImagingLens(0.3, 0.025), CameraChip(5.2e-6, (1280, 1024), 8, 8), 0.3, (0.0, 0.0), 0.0, 0.0, 0.0)
 
 julia> diaphragm(ImagingSensor(lens = lensesdict["F300A25"], cam= camerasdict["UI1540"]), 10mm)
-Imaging Sensor made with:
-  Imaging Lens with
-  f:	300.0 mm and
-  D:	10.0 mm and
-  Camera with
-	square pixel 5.2 μm,
-	(1280, 1024) frame and
-	8/8 bit/channel output.
+ImagingSensor(ImagingLens(0.3, 0.01), CameraChip(5.2e-6, (1280, 1024), 8, 8), 0.3, (0.0, 0.0), 0.0, 0.0, 0.0)
 
 julia> ImagingSensor("F300A25",  "UI1540")
-Imaging Sensor made with:
-  Imaging Lens with
-  f:	300.0 mm and
-  D:	25.0 mm and
-  Camera with
-	square pixel 5.2 μm,
-	(1280, 1024) frame and
-	8/8 bit/channel output.
+ImagingSensor(ImagingLens(0.3, 0.025), CameraChip(5.2e-6, (1280, 1024), 8, 8), 0.3, (0.0, 0.0), 0.0, 0.0, 0.0)
 ```
 
 See also `focallength`, `focaldistance`, `apdiameter`.
@@ -316,11 +289,26 @@ function show(io::IO, x::CameraChip)
     )
 end
 
+function upscaleFactor(ims::ImagingSensor, λ)
+    return upscaleFactor(ims.cam.pixelsize, ims.lens.focallength, ims.lens.aperture, λ)
+end
+
 Base.@kwdef struct hwConfig
-    cam::PhaseRetrieval.CameraChip
+    cam::CameraChip
     f::Float64
     λ::Float64
     d::Float64
+end
+
+function ap_ratio(ims::ImagingSensor, λ)
+    return ap_ratio(ims.cam.pixelsize, ims.lens.focallength, ims.lens.aperture, λ)
+end
+
+function make_centered_domain2D(ims::ImagingSensor)
+    return make_centered_domain2D(ims.cam.imagesize..., ims.cam.pixelsize)
+end
+function make_centered_domain2D(hw::hwConfig)
+    return make_centered_domain2D(hw.cam.imagesize..., hw.cam.pixelsize)
 end
 
 """
@@ -333,7 +321,7 @@ end
     conf1 = hwConfig("UI1540", 300mm, 633nm,25mm) creates a configuration
     based on UI-1540 camera, with a 1 inch lens with focal length 300mm and He-Ne laser.
 """
-hwConfig(s::String, f, λ, d) = hwConfig(PhaseRetrieval.camerasdict[s], f, λ, d)
+hwConfig(s::String, f, λ, d) = hwConfig(camerasdict[s], f, λ, d)
 
 """
     `camerasdict` is a dictionary with often used cameras.
@@ -375,3 +363,5 @@ camerasdict["MC203MG"] = CameraChip(;
 # Lenses
 lensesdict["F300A25"] = ImagingLens(300mm, 25mm)
 lensesdict["F700A75"] = ImagingLens(700mm, 75mm)
+
+end

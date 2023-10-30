@@ -66,3 +66,34 @@ function solve(pr::PRproblem, ::GSparam, ϕ⁰, maxϵ, maxit, keephistory, snaps
 end
 
 # PRproblem(x, X) = TwoSetsFP(ConstrainedByAmplitude(x), FourierTransformedSet(ConstrainedByAmplitude(X)))
+
+"""
+appsftoPR(ap,psfimage) constructs a phase retrieval problem from two real arrays, representing the pupil and the focal planes intensity
+distributions.
+
+The aperture and PSF are assumed to be centred in the array.
+
+Examples
+====
+```jldoctest
+
+ap,_ = PhaseRetrieval.aperture(-1:.2:1,-1:.2:1,.8);
+psfimage = psf(ap);
+
+pr = appsftoPR(ap,psfimage)
+
+# output
+PRproblem{Float64, 2}([1.0 0.0 … 1.0 1.0; 0.0 0.0 … 0.0 1.0; … ; 1.0 0.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0], [8.857504209336042 4.432323038895129 … 8.857504209336042 10.878351222990858; 4.432323038895129 0.7324956483358351 … 4.432323038895129 6.182768610120748; … ; 8.857504209336042 4.432323038895129 … 8.857504209336042 10.878351222990858; 10.878351222990858 6.182768610120747 … 10.878351222990858 12.999999999999998])
+```
+
+"""
+function appsftoPR(ap, psfimage)
+    size(ap) == size(psfimage) || error("Array sizes do not match")
+    a = sqrt.(fftshift(ap))
+
+    A = sqrt.(fftshift(psfimage))
+    # normalise A to ap independent from FFT definition
+    A = A ./ sqrt(sum(abs2, A)) .* sqrt(sum(abs2, fft(a)))
+
+    return PRproblem(a, A)
+end

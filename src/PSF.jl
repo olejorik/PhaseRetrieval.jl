@@ -1,9 +1,18 @@
-
+module ForwardModel
 using FFTW
 using MappedArrays
 
-export AutoExposure, PSFmethod, Fourier, PSFExposure
-export wavelength, airysize, diversed_psfs, throughfocus, doflength
+using ..Hardware
+using SampledDomains: CartesianDomain2D, dualDomain
+using PhaseBases
+using ImageCore
+
+import ..Hardware: upscaleFactor, focallength, apdiameter, numericalaperture
+import ..aperture
+
+export psf, SimConfig, AutoExposure, PSFmethod, Fourier, PSFExposure
+export wavelength, airysize, diversed_psfs, throughfocus, doflength, focallength
+export get_polarization_magnitudes, incoherent_psf, intensity, toimageplane
 
 abstract type PSFmethod end
 
@@ -162,7 +171,7 @@ function (cam::CameraChip)(
             x -> x + maxint / (2^cam.bitdepth) * (randn() * noise[1] + noise[2]), imf
         )
     end
-    storagetype = quantize ? getstoragetype(cam) : Float64
+    storagetype = quantize ? Hardware.getstoragetype(cam) : Float64
     # storagetype = N4f12 #debug -- it's three times faster compared with the unnknown type
     return mappedarray(scaleminmax(storagetype, 0, maxint), imf)
 end
@@ -238,6 +247,7 @@ function show(io::IO, x::SimConfig)
         Simulation configuration with the properties:
 
         name:\t\t $(x.name)
+        algorithm:\t $(typeof(x.alg))
         wavelength:\t $(x.λ)
         $(x.ims)
         with wavefront aberrrations: $(keys(x.phases))
@@ -265,7 +275,7 @@ end
 function psf(
     c::SimConfig{T}; noise=(1, 0), exposure=AutoExposure(), quantize=true
 ) where {T}
-    focalfield = toimageplane(pupilfield(c), algtype(c))
+    focalfield = toimageplane(pupilfield(c), c.alg)
     return ret = c.ims.cam(focalfield, exposure, quantize, noise)
     # TODO add noise
 end
@@ -277,8 +287,7 @@ function diversed_psfs(
         [pupilfield(c)], [field(pupilfield(c), collect(d)) for d in values(c.diversity)]
     )
     return [
-        c.ims.cam(toimageplane(f, algtype(c)), exposure, quantize, noise) for
-        f in div_fields
+        c.ims.cam(toimageplane(f, c.alg), exposure, quantize, noise) for f in div_fields
     ]
 end
 
@@ -355,3 +364,7 @@ end
 
 throughfocus(conf::SimConfig, Δz) = throughfocus(conf::SimConfig) .* (Δz * 2π / conf.λ)
 doflength(conf::SimConfig) = conf.λ / (numericalaperture(conf.ims)^2)
+
+include("VectorialPSF.jl")
+
+end
