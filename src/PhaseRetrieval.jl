@@ -1,13 +1,15 @@
 module PhaseRetrieval
+
 using LinearAlgebra
 using Statistics
 using FFTW
 using SampledDomains: CartesianDomain2D, dualRange, dualDomain
-import SampledDomains: make_centered_domain2D
-import Base: show
-
 using PhaseBases
 using ImageCore
+using AlternatingProjections
+
+import Base: show, *
+import SampledDomains: make_centered_domain2D, getranges
 
 import AlternatingProjections:
     Problem,
@@ -20,35 +22,62 @@ import AlternatingProjections:
     maxit,
     keephistory,
     snapshots # these we will need to change
-using AlternatingProjections
 
-export SHdiversity
-export psf, subpsf, logrescale, airysize
-export removepiston, removetiptilt, twinphase
+export
+    # types
+    AbstractPRproblem,
+    AutoExposure,
+    Fourier,
+    FourierVectorial,
+    GS,
+    GSparam,
+    PRproblem,
+    PSFExposure,
+    PSFmethod,
+    SHdiversity,
+    SimConfig,
 
-export psf, SimConfig, AutoExposure, PSFmethod, Fourier, PSFExposure
-export wavelength, airysize, diversed_psfs, throughfocus, doflength, focallength
-export get_polarization_magnitudes, incoherent_psf
-export FourierVectorial
+    # methods
+    airysize,
+    appsftoPR,
+    diversed_psfs,
+    doflength,
+    focallength,
+    get_polarization_magnitudes,
+    incoherent_psf,
+    logrescale,
+    psf,
+    phwrap,
+    removepiston,
+    removetiptilt,
+    solve,
+    throughfocus,
+    twinphase,
+    wavelength
 
-# export Linear
+### Source files
 
+# type system
 include("types.jl")
-include("utils.jl")
-include("hardware.jl")
 
-using .Hardware
-export hwConfig, SimConfig, ImagingSensor, ImagingLens, CameraChip, roi, diaphragm
-export camerasdict, lensesdict, m, mm, um, μm, nm
-export focaldistance, focallength, apdiameter
+# implementation helpers
+include("utils.jl")
+
+# generic functions
+include("arrayutils.jl")
+iclude("phasefunctions.jl")
+iclude("psffunctions.jl")
+
+#TODO refactor the rest
+include("hardware.jl")
 
 include("ShackHartmann/SHphase.jl")
 
-include("PRproblem.jl")
-
+# forward problem
 include("PSF.jl")
-using .ForwardModel
+include("VectorialPSF.jl")
 
-export AbstractPRproblem, PRproblem, appsftoPR, solve, GS, GSparam, SimConfig
+# Inverse problem
+include("PRproblem.jl")
 
 end

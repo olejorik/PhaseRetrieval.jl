@@ -1,14 +1,5 @@
-module ForwardModel
 using FFTW
 using MappedArrays
-
-using ..Hardware
-using SampledDomains: CartesianDomain2D, dualDomain
-using PhaseBases
-using ImageCore
-
-import ..Hardware: upscaleFactor, focallength, apdiameter, numericalaperture
-import ..aperture
 
 export psf, SimConfig, AutoExposure, PSFmethod, Fourier, PSFExposure
 export wavelength, airysize, diversed_psfs, throughfocus, doflength, focallength
@@ -171,7 +162,7 @@ function (cam::CameraChip)(
             x -> x + maxint / (2^cam.bitdepth) * (randn() * noise[1] + noise[2]), imf
         )
     end
-    storagetype = quantize ? Hardware.getstoragetype(cam) : Float64
+    storagetype = quantize ? getstoragetype(cam) : Float64
     # storagetype = N4f12 #debug -- it's three times faster compared with the unnknown type
     return mappedarray(scaleminmax(storagetype, 0, maxint), imf)
 end
@@ -364,7 +355,3 @@ end
 
 throughfocus(conf::SimConfig, Δz) = throughfocus(conf::SimConfig) .* (Δz * 2π / conf.λ)
 doflength(conf::SimConfig) = conf.λ / (numericalaperture(conf.ims)^2)
-
-include("VectorialPSF.jl")
-
-end

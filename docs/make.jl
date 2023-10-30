@@ -5,7 +5,6 @@
 # Pkg.activate(".")
 # push!(LOAD_PATH,"../src/")
 using PhaseRetrieval
-using PhaseRetrieval.Hardware, PhaseRetrieval.ForwardModel
 @show mm # just to test that the package is loaded
 using Documenter, Literate
 
@@ -21,7 +20,7 @@ for f in readdir(tutorials_folder; join=true)
 end
 
 makedocs(;
-    modules=[PhaseRetrieval, PhaseRetrieval.Hardware, PhaseRetrieval.ForwardModel],
+    modules=[PhaseRetrieval],
     authors="Oleg Soloviev",
     repo="https://github.com/olejorik/PhaseRetrieval.jl/blob/{commit}{path}#L{line}",
     sitename="PhaseRetrieval.jl",

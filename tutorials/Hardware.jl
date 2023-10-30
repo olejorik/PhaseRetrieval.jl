@@ -210,3 +210,12 @@ pvector = PhaseRetrieval.incoherent_psf(confHR, [p for p in polmod[[:exx, :eyx, 
 heatmap(rotr90(pvector[503:523, 631:651]); axis=(aspect=DataAspect(),))
 
 # While we see the elliptical structure, it's not narrower in y, as in Mansuripur's example.
+
+# ## Vectorial PSF through other vectorial Simconfig
+confHRVec = SimConfig{FourierVectorial}("High NA", imsHR, 633nm)
+pvectorial = collect(psf(confHRVec))
+heatmap(rotr90(pvectorial[503:523, 631:651]); axis=(aspect=DataAspect(),))
+
+# For linear polarization
+pvectorialX = collect(psf(confHRVec))
+heatmap(rotr90(pvectorial[503:523, 631:651]); axis=(aspect=DataAspect(),))

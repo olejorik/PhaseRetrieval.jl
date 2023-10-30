@@ -13,6 +13,5 @@ end
 
 PDplan(diversity::Array{<:Number}) = PDplan(plan_fft(diversity), diversity)
 
-import Base: *
 *(pd::PDplan, a::Array{<:Number}) = pd.plan * (pd.diversity .* a)
 # export Base.:*

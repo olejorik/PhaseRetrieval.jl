@@ -1,12 +1,6 @@
-module Hardware
-using ImageCore: N0f8, N8f8, N6f10, N4f12, N2f14, N0f16
-import SampledDomains: make_centered_domain2D
-import ..upscaleFactor
-
 export hwConfig, SimConfig, ImagingSensor, ImagingLens, CameraChip, roi, diaphragm
 export camerasdict, lensesdict, m, mm, um, μm, nm
-export focaldistance, focallength, apdiameter, upscaleFactor, make_centered_domain2D
-export numericalaperture
+export focaldistance, focallength, apdiameter
 
 # dictionaries with typical harware for ease of use with experimental data
 
@@ -45,25 +39,33 @@ cam = CameraChip(;
 ```
 
 ```jldoctest
-julia> ap,_ = aperture(-1:.25:1,-1:.25:1,.8); ap
-ERROR: UndefVarError: `aperture` not defined
-Stacktrace:
- [1] top-level scope
-   @ none:1
+julia> ap,_ = PhaseRetrieval.aperture(-1:.25:1,-1:.25:1,.8); ap
+9×9 Matrix{Float64}:
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  1.0  1.0  1.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  1.0  1.0  1.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  1.0  1.0  1.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
 
-julia> imf = toimageplane(ap);
-ERROR: UndefVarError: `toimageplane` not defined
-Stacktrace:
- [1] top-level scope
-   @ none:1
+julia> imf = PhaseRetrieval.toimageplane(ap);
 
 julia> cam = camerasdict["UI3860"];
 
 julia> cam(imf, AutoExposure(.7)) |> collect
-ERROR: UndefVarError: `imf` not defined
-Stacktrace:
- [1] top-level scope
-   @ none:1
+9×9 Array{N4f12,2} with eltype FixedPointNumbers.N4f12:
+ 0.0051  0.0  0.0122  0.0427  0.0601  0.0427  0.0122  0.0  0.0051
+ 0.0     0.0  0.0     0.0     0.0     0.0     0.0     0.0  0.0
+ 0.0122  0.0  0.0286  0.1006  0.1411  0.1006  0.0286  0.0  0.0122
+ 0.0427  0.0  0.1006  0.3553  0.4987  0.3553  0.1006  0.0  0.0427
+ 0.0601  0.0  0.1411  0.4987  0.6999  0.4987  0.1411  0.0  0.0601
+ 0.0427  0.0  0.1006  0.3553  0.4987  0.3553  0.1006  0.0  0.0427
+ 0.0122  0.0  0.0286  0.1006  0.1411  0.1006  0.0286  0.0  0.0122
+ 0.0     0.0  0.0     0.0     0.0     0.0     0.0     0.0  0.0
+ 0.0051  0.0  0.0122  0.0427  0.0601  0.0427  0.0122  0.0  0.0051
 
 ```
 
@@ -137,7 +139,9 @@ See also [`diaphragm`](@ref), [`lensesdict`](@ref).
 # Example
 ```jldoctest
 julia> lens = ImagingLens(300mm, 25mm)
-ImagingLens(0.3, 0.025)
+Imaging Lens with
+  f:	300.0 mm and
+  D:	25.0 mm
 ```
 """
 Base.@kwdef struct ImagingLens
@@ -155,7 +159,9 @@ Diaphragm can be larger than the lens diameter (there is no "hardware limitation
 # Example
 ```jldoctest
 julia> diaphragm(ImagingLens(300mm, 25mm), 10mm)
-ImagingLens(0.3, 0.01)
+Imaging Lens with
+  f:	300.0 mm and
+  D:	10.0 mm
 ```
 
 """
@@ -201,13 +207,34 @@ julia> ImagingSensor(lens = ImagingLens(300mm, 25mm),
                channelbitdepth=8
                )
            )
-ImagingSensor(ImagingLens(0.3, 0.025), CameraChip(5.2e-6, (1280, 1024), 8, 8), 0.3, (0.0, 0.0), 0.0, 0.0, 0.0)
+Imaging Sensor made with:
+  Imaging Lens with
+  f:	300.0 mm and
+  D:	25.0 mm and
+  Camera with
+	square pixel 5.2 μm,
+	(1280, 1024) frame and
+	8/8 bit/channel output.
 
 julia> diaphragm(ImagingSensor(lens = lensesdict["F300A25"], cam= camerasdict["UI1540"]), 10mm)
-ImagingSensor(ImagingLens(0.3, 0.01), CameraChip(5.2e-6, (1280, 1024), 8, 8), 0.3, (0.0, 0.0), 0.0, 0.0, 0.0)
+Imaging Sensor made with:
+  Imaging Lens with
+  f:	300.0 mm and
+  D:	10.0 mm and
+  Camera with
+	square pixel 5.2 μm,
+	(1280, 1024) frame and
+	8/8 bit/channel output.
 
 julia> ImagingSensor("F300A25",  "UI1540")
-ImagingSensor(ImagingLens(0.3, 0.025), CameraChip(5.2e-6, (1280, 1024), 8, 8), 0.3, (0.0, 0.0), 0.0, 0.0, 0.0)
+Imaging Sensor made with:
+  Imaging Lens with
+  f:	300.0 mm and
+  D:	25.0 mm and
+  Camera with
+	square pixel 5.2 μm,
+	(1280, 1024) frame and
+	8/8 bit/channel output.
 ```
 
 See also `focallength`, `focaldistance`, `apdiameter`.
@@ -363,5 +390,3 @@ camerasdict["MC203MG"] = CameraChip(;
 # Lenses
 lensesdict["F300A25"] = ImagingLens(300mm, 25mm)
 lensesdict["F700A75"] = ImagingLens(700mm, 75mm)
-
-end

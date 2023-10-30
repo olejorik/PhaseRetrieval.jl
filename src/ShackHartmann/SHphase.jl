@@ -1,5 +1,4 @@
 using FFTW
-using .Hardware
 
 # Algorithms to choose
 abstract type Alg end
