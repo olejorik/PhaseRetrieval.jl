@@ -11,17 +11,17 @@ using AlternatingProjections
 import Base: show, *
 import SampledDomains: make_centered_domain2D, getranges
 
-import AlternatingProjections:
-    Problem,
+import AlternatingProjections: # these we will need to change
     Algorithm,
-    solve,
-    TwoSetsFP,
-    IterativeAlgorithm,
     initial,
-    tolerance,
-    maxit,
+    IterativeAlgorithm,
     keephistory,
-    snapshots # these we will need to change
+    maxit,
+    Problem,
+    snapshots,
+    solve,
+    tolerance,
+    TwoSetsFP
 
 export
     # types
@@ -65,8 +65,8 @@ include("utils.jl")
 
 # generic functions
 include("arrayutils.jl")
-iclude("phasefunctions.jl")
-iclude("psffunctions.jl")
+include("phasefunctions.jl")
+include("psffunctions.jl")
 
 #TODO refactor the rest
 include("hardware.jl")
