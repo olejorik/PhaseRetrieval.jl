@@ -14,6 +14,7 @@ import AlternatingProjections:
     solve,
     TwoSetsFP,
     IterativeAlgorithm,
+    APparam,
     initial,
     tolerance,
     maxit,
@@ -36,6 +37,17 @@ include("VectorialPSF.jl")
 
 include("PRproblem.jl")
 
-export AbstractPRproblem, PRproblem, appsftoPR, solve, GS, GSparam
+export AbstractPRproblem,
+    PRproblem,
+    PRproblemSat,
+    prproblem,
+    appsftoPR,
+    solve,
+    GS,
+    GSparam,
+    AP,
+    DRAP,
+    APparam,
+    DRAPparam
 
 end

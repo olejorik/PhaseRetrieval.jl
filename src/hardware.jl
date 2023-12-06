@@ -1,4 +1,4 @@
-export hwConfig, SimConfig, ImagingSensor, ImagingLens, CameraChip, roi, diaphragm
+export hwConfig, SimConfig, ImagingSensor, ImagingLens, CameraChip, roi, diaphragm, aperture
 export camerasdict, lensesdict, m, mm, um, μm, nm
 export focaldistance, focallength, apdiameter
 
