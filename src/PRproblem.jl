@@ -10,22 +10,26 @@ Classical phase-retrieval problem of finding complex arrays x, X such that
   |x| = a, |X| = A, and X =F(x),
 where F denotes the Fourier transform.
 Note that the problem is not required to be consistent.
+
+    PRproblem(a,A; center = true, renormalize = true) -> PRproblem
+
+Default constructor for PRproblem from the arrays which origin is supposed to be at their center and the second array is renormalised to satisfy the Parceval equation.
 """
 struct PRproblem{T<:Real,N} <: AbstractPRproblem
     a::Array{T,N}
     A::Array{T,N}
+
+    function PRproblem(
+        a::Array{T,N}, A::Array{T,N}; center=true, renormalize=true
+    ) where {T,N}
+        A1 = renormalize ? A ./ sqrt(sum(abs2, A)) .* sqrt(sum(abs2, a)) : A
+        shift = center ? fftshift : x -> x
+        return new{eltype(A1),N}(shift(a), shift(A1))
+    end
+
 end
 
-"""
-    prproblem(a,A; center = true, renormalize = true) -> PRproblem
 
-Default constructor for PRproblem from the arrays which origin is supposed to be at their center and the second array is renormalised to satisfy the Parceval equation.
-"""
-function prproblem(a, A; center=true, renormalize=true)
-    A1 = renormalize ? A ./ sqrt(sum(abs2, A)) .* sqrt(sum(abs2, a)) : A
-    shift = center ? fftshift : x -> x
-    return PRproblem(shift(a), shift(A1))
-end
 
 # PRproblem can be converted to a feasibility problem
 function TwoSetsFP(pr::PRproblem)
@@ -47,6 +51,14 @@ struct PRproblemSat{T<:Real,N} <: AbstractPRproblem
     a::Array{T,N}
     A::Array{T,N}
     s::T
+
+    function PRproblemSat(
+        a::Array{T,N}, A::Array{T,N}, s; center=true, renormalize=true
+    ) where {T,N}
+        A1 = renormalize ? A ./ sqrt(sum(abs2, A)) .* sqrt(sum(abs2, a)) : A
+        shift = center ? fftshift : x -> x
+        return new{eltype(A1),N}(shift(a), shift(A1), s)
+    end
 end
 
 # this problem can be converted to a feasibility problem in two ways
@@ -94,13 +106,13 @@ APparam(alg::GSparam) =
 
 Solve PR problem using GS method. Any change of the GS parameters can be given
 """
-solve(pr::PRproblem, alg::GS, args...; kwargs...) =
+solve(pr::AbstractPRproblem, alg::GS, args...; kwargs...) =
     solve(TwoSetsFP(pr), APparam(alg), args...; kwargs...)
 
-solve(pr::PRproblem, alg::IterativeAlgorithm, args...; kwargs...) =
+solve(pr::AbstractPRproblem, alg::IterativeAlgorithm, args...; kwargs...) =
     solve(TwoSetsFP(pr), alg, args...; kwargs...)
 
-solve(pr::PRproblem, algs::Tuple{Vararg{IterativeAlgorithm}}, args...; kwargs...) =
+solve(pr::AbstractPRproblem, algs::Tuple{Vararg{IterativeAlgorithm}}, args...; kwargs...) =
     solve(TwoSetsFP(pr), algs, args...; kwargs...)
 
 # PRproblem(x, X) = TwoSetsFP(ConstrainedByAmplitude(x), FourierTransformedSet(ConstrainedByAmplitude(X)))
