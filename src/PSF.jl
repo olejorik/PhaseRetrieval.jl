@@ -21,9 +21,16 @@ struct MVM <: PSFmethod end
 const default_forward_method = Fourier()
 
 abstract type PSFExposure end
+"""
+    AutoExposure(s =1) <: PSFExposure
+
+Type used to set exposure of the camera to `s`*m, where m is the maximal intensity of the frame.
+
+"""
 struct AutoExposure <: PSFExposure
     scale::Float64
 end
+
 
 AutoExposure() = AutoExposure(1)
 

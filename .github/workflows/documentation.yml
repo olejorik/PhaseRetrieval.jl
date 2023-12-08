@@ -10,24 +10,22 @@ on:
 jobs:
   build:
     permissions: write-all
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
       - uses: julia-actions/setup-julia@v1
         with:
           version: '1.9'
       - uses: julia-actions/cache@v1
-        with:
-          cache-compiled: "true"
       - name: Install dependencies
         run: |
           julia --project=docs -e '
             using Pkg
             Pkg.add(url = "https://github.com/olejorik/AlternatingProjections.jl", rev= "develop")
-            Pkg.add(url = "https://github.com/olejorik/SampledDomains.jl")            
+            Pkg.add(url = "https://github.com/olejorik/SampledDomains.jl")
             Pkg.add(url = "https://github.com/olejorik/PhaseUtils.jl")
             Pkg.add(url = "https://github.com/olejorik/PhasePlots.jl")
-            Pkg.add(url = "https://github.com/olejorik/PhaseBases.jl")            
+            Pkg.add(url = "https://github.com/olejorik/PhaseBases.jl")
             Pkg.develop(PackageSpec(path=pwd()))
             Pkg.instantiate()'
       - name: Build and deploy
