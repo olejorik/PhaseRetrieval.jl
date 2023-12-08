@@ -29,6 +29,7 @@ makedocs(;
     # canonical="https://olejorik.github.io/PhaseRetrieval.jl",
     # assets=String[],
     # ),
+    checkdocs=:exports,
     # doctest=:fix,
     format=Documenter.HTML(;
         # Use clean URLs, unless built as a "local" build
