@@ -311,6 +311,7 @@ showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2.mask)[1]
 ph = fftshift(angle.(sol[1][:, :, 1]))
 ph_u = unwrap_LS(ph, conf2.ap)
 fig, ax, hm = showarray(bboxview(ph_u .* conf2.mask))
+ax.aspect = 1
 Colorbar(fig[1, 2], hm)
 fig
 

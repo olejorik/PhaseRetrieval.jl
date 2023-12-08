@@ -24,7 +24,8 @@ abstract type PSFExposure end
 """
     AutoExposure(s =1) <: PSFExposure
 
-Type used to set exposure of the camera to `s`*m, where m is the maximal intensity of the frame.
+Type used to set exposure of the camera to `s`*m, where m is the exposure that images the maximal intensity of the frame as `1`. For instance, if the same scene is imaged with `AutoExposure(0.5)`, the brightest pixel will have value 0.5.
+Values of `s` larger than 1 produce over-exposured images.
 
 """
 struct AutoExposure <: PSFExposure
