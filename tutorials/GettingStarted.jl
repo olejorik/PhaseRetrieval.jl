@@ -181,14 +181,9 @@ end
 # ```
 
 using FFTW
-using AlternatingProjections
-# pr = PRproblem(conf2.ap, p)
-a = fftshift(sqrt.(Float64.(conf2.ap)))
-A = fftshift(sqrt.(collect(Float64, p2)))
-N = sqrt(sum(abs2, A))
-n = sqrt(sum(abs2, a))
-A = A ./ N .* n
-pr = TwoSetsFP(ConstrainedByAmplitude(a), FourierTransformedSet(ConstrainedByShape(A)))
+a = sqrt.(Float64.(conf2.ap))
+A = sqrt.(collect(Float64, p2))
+pr = PRproblem(a, A)
 sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true), APparam(; maxϵ=0.001)))
 showphasetight(fftshift(angle.(sol[1])) .* conf2.mask)[1]
 
@@ -224,12 +219,9 @@ showarray(pcrop)
 # TODO wrap all this in functions
 ims2crop = PhaseRetrieval.ImagingSensor(; lens=lens2, cam=PhaseRetrieval.roi(cam, cropw))
 conf2crop = SimConfig("10mm aperture", ims2crop, 633nm)
-a = fftshift(sqrt.(Float64.(conf2crop.ap)))
-A = fftshift(sqrt.(collect(Float64, pcrop)))
-N = sqrt(sum(abs2, A))
-n = sqrt(sum(abs2, a))
-A = A ./ N .* n
-pr = TwoSetsFP(ConstrainedByAmplitude(a), FourierTransformedSet(ConstrainedByShape(A)))
+a = sqrt.(Float64.(conf2crop.ap))
+A = sqrt.(collect(Float64, pcrop))
+pr = PRproblem(a, A)
 sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true, maxit=550), APparam(; maxit=10)))
 # sol = solve(pr, (DRAPparam(β = 0.9,keephistory = true), APparam(maxϵ = 0.001)))
 showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
@@ -262,20 +254,12 @@ save("psf_crop.png", Gray.(mosaicview(div_psf_crop; nrow=1, npad=5, fillvalue=1)
 
 # Now the set corresponding to the pupil phase will be phase-diversed set
 
-a = fftshift(sqrt.(Float64.(conf2crop.ap)))
-phases_fft = fftshift.(phases)
-A = stack(fftshift(sqrt.(collect(Float64, p))) for p in div_psf_crop)
+a = sqrt.(Float64.(conf2crop.ap))
+A = [sqrt.(collect(Float64, p)) for p in div_psf_crop]
+pr = PDPRproblem(a, A, phases)
 
-N = sqrt(sum(abs2, A))
-n = sqrt(sum(abs2, a))
-A = A ./ N .* n
-
-aset = ConstrainedByAmplitude(a)
-adiv = AlternatingProjections.PhaseDiversedSet(aset, phases_fft)
-Adiv = FourierTransformedSet(ConstrainedByShape(A), (1, 2))
 
 # As expected, using phase diversities accelerates the phase retrieval a lot
-pr = TwoSetsFP(adiv, Adiv)
 sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true, maxit=50), APparam(; maxit=50)))
 showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2crop.mask)[1]
 
@@ -316,19 +300,10 @@ defocus = 2π / 4 * z10(; n=2, m=0)
 defocus = ZonalPhase(throughfocus(conf2, doflength(conf2)))
 phases = [collect(k * defocus) for k in [0, 1, 2, -2, -1]] #TODO this should be automatized
 
-a = fftshift(sqrt.(Float64.(conf2.ap)))
-phases_fft = fftshift.(phases)
-A = stack(fftshift(sqrt.(collect(Float64, p))) for p in div_psf)
+a = sqrt.(Float64.(conf2.ap))
+A = [sqrt.(collect(Float64, p)) for p in div_psf]
 
-N = sqrt(sum(abs2, A))
-n = sqrt(sum(abs2, a))
-A = A ./ N .* n
-
-aset = ConstrainedByAmplitude(a)
-adiv = AlternatingProjections.PhaseDiversedSet(aset, phases_fft)
-Adiv = FourierTransformedSet(ConstrainedByShape(A), (1, 2))
-
-pr = TwoSetsFP(adiv, Adiv)
+pr = PDPRproblem(a, A, phases)
 sol = solve(pr, (DRAPparam(; β=0.5, keephistory=true, maxit=50), APparam(; maxit=50)))
 showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2.mask)[1]
 

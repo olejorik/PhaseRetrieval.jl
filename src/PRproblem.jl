@@ -13,7 +13,7 @@ Note that the problem is not required to be consistent.
 
     PRproblem(a,A; center = true, renormalize = true) -> PRproblem
 
-Default constructor for PRproblem from the arrays which origin is supposed to be at their center and the second array is renormalised to satisfy the Parceval equation.
+Default constructor for PRproblem from the arrays which origin is supposed to be at their center and the second array is renormalised to satisfy the Parseval equation.
 """
 struct PRproblem{T<:Real,N} <: AbstractPRproblem
     a::Array{T,N}
@@ -22,7 +22,7 @@ struct PRproblem{T<:Real,N} <: AbstractPRproblem
     function PRproblem(
         a::Array{T,N}, A::Array{T,N}; center=true, renormalize=true
     ) where {T,N}
-        A1 = renormalize ? A ./ sqrt(sum(abs2, A)) .* sqrt(sum(abs2, a)) : A
+        A1 = renormalize ? enforceParseval(A, a) : A
         shift = center ? fftshift : x -> x
         return new{eltype(A1),N}(shift(a), shift(A1))
     end
@@ -55,7 +55,7 @@ struct PRproblemSat{T<:Real,N} <: AbstractPRproblem
     function PRproblemSat(
         a::Array{T,N}, A::Array{T,N}, s; center=true, renormalize=true
     ) where {T,N}
-        A1 = renormalize ? A ./ sqrt(sum(abs2, A)) .* sqrt(sum(abs2, a)) : A
+        A1 = renormalize ? enforceParseval(A, a) : A
         shift = center ? fftshift : x -> x
         return new{eltype(A1),N}(shift(a), shift(A1), s)
     end
@@ -68,6 +68,45 @@ function TwoSetsFP(pr::PRproblemSat, scaling="focal")
         ConstrainedByAmplitude(pr.a),
         FourierTransformedSet(ConstrainedByShapeSaturated(pr.A, sat)),
     )
+end
+
+"""
+  PDPRproblem(a, [Aᵢ], [ϕᵢ])
+
+Phase-diverse phase-retrieval problem of finding complex arrays x, Xᵢ such that
+  |x| = a, |Xᵢ| = Aᵢ, and Xᵢ =F(x exp(im ϕᵢ)),
+where F denotes the Fourier transform and ϕᵢ are predefined phase diversities.
+Note that the problem is not required to be consistent.
+
+    PDPRproblem(a, [Aᵢ], [ϕᵢ] ; center = true, renormalize = true) -> PDPRproblem
+
+Default constructor for PDPRproblem from the arrays which origin is supposed to be at their center and  array Aᵢ are renormalised to satisfy the Parseval equation.
+"""
+struct PDPRproblem{T<:Real,N} <: AbstractPRproblem
+    a::Array{T,N}
+    A::Vector{Array{T,N}}
+    phases::Vector{Array{T,N}}
+
+    function PDPRproblem(
+        a::Array{T,N},
+        A::Vector{Array{T,N}},
+        phases::Vector{Array{T,N}};
+        center=true,
+        renormalize=true,
+    ) where {T,N}
+        A1 = renormalize ? enforceParseval.(A, Ref(a)) : A
+        shift = center ? fftshift : x -> x
+        return new{eltype(A1[1]),N}(shift(a), shift.(A1), shift.(phases))
+    end
+
+end
+
+# PDPRproblem can be converted to a feasibility problem
+function TwoSetsFP(pr::PDPRproblem)
+    aset = ConstrainedByAmplitude(pr.a)
+    adiv = AlternatingProjections.PhaseDiversedSet(aset, pr.phases)
+    Adiv = FourierTransformedSet(ConstrainedByShape(stack(pr.A)), Tuple(1:ndims(pr.A[1])))
+    return TwoSetsFP(adiv, Adiv)
 end
 
 # methods to solve

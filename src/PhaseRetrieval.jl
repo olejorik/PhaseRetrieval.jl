@@ -40,6 +40,7 @@ include("PRproblem.jl")
 export AbstractPRproblem,
     PRproblem,
     PRproblemSat,
+    PDPRproblem,
     prproblem,
     appsftoPR,
     solve,

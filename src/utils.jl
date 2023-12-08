@@ -239,18 +239,14 @@ psfimage = psf(ap);
 pr = appsftoPR(ap,psfimage)
 
 # output
-PRproblem{Float64, 2}([1.0 0.0 … 1.0 1.0; 0.0 0.0 … 0.0 1.0; … ; 1.0 0.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0], [8.857504209336042 4.432323038895129 … 8.857504209336042 10.878351222990858; 4.432323038895129 0.7324956483358351 … 4.432323038895129 6.182768610120748; … ; 8.857504209336042 4.432323038895129 … 8.857504209336042 10.878351222990858; 10.878351222990858 6.182768610120747 … 10.878351222990858 12.999999999999998])
+PRproblem{Float64, 2}([1.0 0.0 … 1.0 1.0; 0.0 0.0 … 0.0 1.0; … ; 1.0 0.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0], [8.857504209336042 4.432323038895129 … 8.857504209336042 10.878351222990858; 4.432323038895129 0.7324956483358351 … 4.432323038895129 6.182768610120747; … ; 8.857504209336042 4.432323038895129 … 8.857504209336042 10.878351222990858; 10.878351222990858 6.182768610120746 … 10.878351222990858 12.999999999999996])
 ```
 
 """
 function appsftoPR(ap, psfimage)
     size(ap) == size(psfimage) || error("Array sizes do not match")
-    a = sqrt.(fftshift(ap))
-
-    A = sqrt.(fftshift(psfimage))
-    # normalise A to ap independent from FFT definition
-    A = A ./ sqrt(sum(abs2, A)) .* sqrt(sum(abs2, fft(a)))
-
+    a = sqrt.(ap)
+    A = sqrt.(psfimage)
     return PRproblem(a, A)
 end
 
@@ -285,4 +281,22 @@ end
 function twinphase(ϕ)
     shifts = map(x -> 1 - mod(x, 2), size(ϕ))
     return circshift(reverse(-ϕ), shifts)
+end
+
+"""
+    enforceParseval!(A, a)
+
+Renormalise `A` so its 2-norm is equal to the 2-norm of `fft(a)`.
+"""
+function enforceParseval!(A, a)
+    n = sqrt(sum(abs2, fft(a))) / sqrt(sum(abs2, A))
+    for i in eachindex(A)
+        A[i] *= n
+    end
+    return A
+end
+
+function enforceParseval(A, a)
+    A1 = copy(A)
+    return enforceParseval!(A1, a)
 end
