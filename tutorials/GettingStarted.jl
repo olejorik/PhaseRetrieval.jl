@@ -176,9 +176,15 @@ end
 # The goal of the inverse problem is from the given PSF and `SimConfig`
 # to restore the unknown phase.
 
-# As at this stage the problem is already reduced to its numerical equivalent
+# In mathematics, the (2D) phase retrieval (PR) problem can be described as
 # ```math
+# \text{find }x \mathbb{C}^{M \times N} \text{s.t.}\\
+# \abs{x} = a, \abs{\F x} = A
 # ```
+# for some real arrays $a$ and $A.$
+#
+# As for the PSF $p$ one has $p = \abs{\F (a e^{i \phi})}$, we can from the PRproblem by passing to `PRproblem` object two arrays corresponding to the square root of the intensities in the pupil and focal planes.
+# This PR problem we try to solve using successive applications of the DRAP algorithm with β = 0.9 and Alternating projections algorithm with the default number of iterations.
 
 using FFTW
 a = sqrt.(Float64.(conf2.ap))

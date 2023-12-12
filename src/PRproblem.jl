@@ -155,3 +155,37 @@ solve(pr::AbstractPRproblem, algs::Tuple{Vararg{IterativeAlgorithm}}, args...; k
     solve(TwoSetsFP(pr), algs, args...; kwargs...)
 
 # PRproblem(x, X) = TwoSetsFP(ConstrainedByAmplitude(x), FourierTransformedSet(ConstrainedByAmplitude(X)))
+
+stochasticSolve(pr::AbstractPRproblem, alg::IterativeAlgorithm, args...; kwargs...) =
+    stochasticSolve(pr, (alg), args...; kwargs...)
+
+function stochasticSolve(
+    pr::AbstractPRproblem,
+    algs::Tuple{Vararg{IterativeAlgorithm}},
+    args...;
+    nruns=10,
+    ϕscale=2π,
+    quality=x ->
+        LinearAlgebra.norm(solution(x) .- lasty(x)) / LinearAlgebra.norm(solution(x)),
+    kwargs...,
+)
+    feaspr = TwoSetsFP(pr)
+    x0 = initial(algs)
+    if ismissing(x0)
+        x0 = getelement(feaspr.A)
+    end
+
+    sols_and_vals = [
+        begin
+            @info "Running $n run from $nruns tries"
+            ϕ0 = rand(Float64, size(x0)) * ϕscale # Random phase
+            xinitrand = exp.(1im * ϕ0) .* x0
+            sol = solve(TwoSetsFP(pr), algs, args...; kwargs..., x⁰=xinitrand)
+            val = quality(sol)
+            (sol, val)
+        end for n in 1:nruns
+    ]
+    bestrun = argmin(getindex.(sols_and_vals, 2))
+    @info "Best value is $(sols_and_vals[bestrun][2])"
+    return sols_and_vals[bestrun][1]
+end
