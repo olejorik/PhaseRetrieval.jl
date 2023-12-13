@@ -156,10 +156,26 @@ solve(pr::AbstractPRproblem, algs::Tuple{Vararg{IterativeAlgorithm}}, args...; k
 
 # PRproblem(x, X) = TwoSetsFP(ConstrainedByAmplitude(x), FourierTransformedSet(ConstrainedByAmplitude(X)))
 
-stochasticSolve(pr::AbstractPRproblem, alg::IterativeAlgorithm, args...; kwargs...) =
-    stochasticSolve(pr, (alg), args...; kwargs...)
+stochasticSolveKeep(pr::AbstractPRproblem, alg::IterativeAlgorithm, args...; kwargs...) =
+    stochasticSolveKeep(pr, (alg), args...; kwargs...)
 
-function stochasticSolve(
+"""
+    stochasticSolveKeep(
+    pr::AbstractPRproblem,
+    algs::Tuple{Vararg{IterativeAlgorithm}},
+    args...;
+    nruns=10,
+    ϕscale=2π,
+    quality=x ->
+        LinearAlgebra.norm(solution(x) .- lasty(x)) / LinearAlgebra.norm(solution(x)),
+    kwargs...,
+)
+
+Solve problem `pr` with perturbing the initial value with a random phase term uniformly distributed in interval [0,ϕscale]. Run `nrun` times and return vector of tuples of the solution and values of `quality` function.
+
+See also [`stochasticSolve`](@ref).
+"""
+function stochasticSolveKeep(
     pr::AbstractPRproblem,
     algs::Tuple{Vararg{IterativeAlgorithm}},
     args...;
@@ -185,6 +201,27 @@ function stochasticSolve(
             (sol, val)
         end for n in 1:nruns
     ]
+    return sols_and_vals
+end
+
+"""
+    stochasticSolve(
+    pr::AbstractPRproblem,
+    algs::Tuple{Vararg{IterativeAlgorithm}},
+    args...;
+    nruns=10,
+    ϕscale=2π,
+    quality=x ->
+        LinearAlgebra.norm(solution(x) .- lasty(x)) / LinearAlgebra.norm(solution(x)),
+    kwargs...,
+)
+
+Solve problem `pr` with perturbing the initial value with a random phase term uniformly distributed in interval [0,ϕscale]. Run `nrun` times and return solution with the minimal value of `quality` function.
+
+See also  [`stochasticSolveKeep`](@ref).
+"""
+function stochasticSolve(args...; kwargs...)
+    sols_and_vals = stochasticSolveKeep(args...; kwargs...)
     bestrun = argmin(getindex.(sols_and_vals, 2))
     @info "Best value is $(sols_and_vals[bestrun][2])"
     return sols_and_vals[bestrun][1]
