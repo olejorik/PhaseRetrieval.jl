@@ -201,9 +201,7 @@ showphasetight(fftshift(angle.(sol[1])) .* conf2.mask)[1]
 # ```
 # ![Output after 1500 iterations](../assets/PR_DRAP1500.png)
 
-#  The phase is perfectly reconstructed now, and
-#  so here is the main problem of the AP-based PR algorithms --- they require quite
-#  a long time to converge, even for the noiseless data.
+#  The phase is perfectly reconstructed now, and so here is the main problem of the AP-based PR algorithms --- they require quite a long time to converge, even for the noiseless data.
 
 # Here is an attempt with the initial guess given by the simple subset method
 th = 0.6 * maximum(A)
@@ -237,16 +235,16 @@ showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 sol = solve(pr, (DRAPparam(; β=0.91, keephistory=true, maxit=500), APparam(; maxit=10)))
 showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 
-# Douglas-Rachford is known to eventully find the solution if you run it long enough:
-# For instance, starting with `b`=0.91 would require about 20000 iteration to converge:
+# Douglas-Rachford is known to eventually find the solution if you run it long enough:
+# For instance, starting with `b`=0.91 would require about 20000 iterations to converge:
 sol = solve(pr, (DRAPparam(; β=0.91, keephistory=true, maxit=20000), APparam(; maxit=100)))
 showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 
-# Fortunately, julia is fast, so the calcualtions of 20K iterations take less then a minute.
+# Fortunately, julia is fast, so the calculations of 20K iterations take less than a minute.
 
+##
 # ## Using phase diversity
-#  To use phase-diverse Phase Retrieval, we need to construct the phase diversities for
-# the cropped configuration
+#  To use phase-diverse Phase Retrieval, we need to construct the phase diversities for the cropped configuration
 z10 = ZernikeBW(conf2crop, 10);
 # Then we know, that cropped PSFs correspond to different values of the same defocus
 ## defocus = 2π / 4 * z10(; n=2, m=0)
@@ -281,23 +279,30 @@ fig, ax, hm = showarray(bboxview(ph_u .* conf2crop.mask))
 Colorbar(fig[1, 2], hm)
 fig
 
-# Now the phase in unwrapped and can be decomposed by the basis functions
+# Now the phase is unwrapped and can be decomposed by the basis functions
 restored_coef = PhaseBases.decompose(ph_u, z10)
 #  and compare the restored coefficients with the original ones
 fig = Figure();
-Axis(fig[1, 1]);
-scatter!(phase.coef)
-scatter!(restored_coef)
+ax = Axis(fig[1, 1]);
+scatter!(phase.coef; label="original")
+scatter!(restored_coef; label="restored")
+ax.title = "Original vs restored Zernike coefficients"
+axislegend()
+
+err_coef = restored_coef .- phase.coef
+err_coef[1] = 0
+ax, _ = scatter(fig[2, 1], err_coef)
+ax.title = "Coefficient restoration error"
 fig
 
-# The error is mainly present in the high rder polynomials, which might
-# be an artifact of the decompostion (mumerical integration) with low resolution.
-#  We can compare the phases themselves
+# The error is quite small, although we see it increasing for high-order aberrations.
+#  We can compare the phases themselves and see the error appearing on the edges.
 ph_u .-= restored_coef[1]
 phase_crop = ModalPhase(phase.coef, z10)
 err = (ph_u .- phase_crop)
 fig, ax, hm = showarray(bboxview(err .* conf2crop.mask))
 Colorbar(fig[1, 2], hm)
+ax.title = "Phase restoration error, rms = $(round(maskedrmse(err, z10.ap), digits = 3))"
 fig
 
 # Try with high-res phase
@@ -321,38 +326,38 @@ ax.aspect = 1
 Colorbar(fig[1, 2], hm)
 fig
 
-# Now the phase in unwrapped and can be decomposed by the basis functions
+# Now the phase is unwrapped and can be decomposed by the basis functions
 restored_coef = PhaseBases.decompose(ph_u, z10)
 #  and compare the restored coefficients with the original ones
 fig = Figure();
-Axis(fig[1, 1]);
-scatter!(phase.coef)
-scatter!(restored_coef)
-fig
+ax = Axis(fig[1, 1]);
+scatter!(phase.coef; label="original")
+scatter!(restored_coef; label="restored")
+ax.title = "Original vs restored Zernike coefficients"
+axislegend()
 
-# The error is error is greatly reduced.
-# Here is the plot of the coefficient differences (with piston ignored)
-err_coef = (phase.coef .- restored_coef)[2:end]
-fig, ax, sc = barplot(err_coef)
-ax.title = "RMS error = $(norm(err_coef))"
+err_coef = restored_coef .- phase.coef
+err_coef[1] = 0
+ax, _ = scatter(fig[2, 1], err_coef)
+ax.title = "Coefficient restoration error"
 fig
+# The error is error is about the same.
+
 #  We can compare the phases themselves
 ph_u .-= restored_coef[1]
 err = (ph_u .- phase)
-fig, ax, hm = showarray(bboxview(err .* conf2.mask))
+fig, ax, hm = showarray(bboxview(err .* conf2.mask));
 ax.aspect = 1
 Colorbar(fig[1, 2], hm)
 ax.title = "Phase rmse = $(PhaseUtils.maskedphasermse(ph_u, phase, conf2.ap)/(2π)) λ"
 fig
 
-# The quite big error in the coefficient restoration compared with a
-# the erro magnitude in the phases can be expained by the numerical error
-# of decomposiotion by Zernikes. Here is , for instance,
-# result of decompostion of the input phase:
+# The quite big error in the coefficient restoration compared with the error magnitude in the phases _is not_ the numerical error of decomposition by Zernikes.
+# Here is, for instance, the result of the decomposition of the input phase:
 rest = PhaseBases.decompose(collect(phase), z10)
 scatter(phase.coef)
 scatter!(rest)
 current_figure()
 
-# But the error grows witht the index of the Zernike:
+# But the error grows with the index of the Zernike:
 scatter(rest .- phase.coef; axis=(title="RMS error = $( norm(rest .- phase.coef))",))
