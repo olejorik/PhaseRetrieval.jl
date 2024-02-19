@@ -25,11 +25,11 @@ with wavefront aberrrations: String[]
 with phase diversities String[]
 </code></pre><p>This creates a simulation configuration for the generation of a PSF using <a href="../../#PhaseRetrieval.Fourier"><code>Fourier</code></a> methods. If we check near the central pixel, we&#39;ll see that for this configuration the PSF is almost one pixel wide. To crop central part of the image, we&#39;ll use <code>crop</code> function from <code>PhaseUtils</code> package.</p><pre><code class="language-julia hljs">p = psf(conf1)
 using PhaseUtils
-heatmap(rotr90(crop(p, 9)); axis=(aspect=DataAspect(),)) # show central 9 pixels</code></pre><img src="c26707aa.png" alt="Example block output"/><p>Indeed, the Airy pattern should be about 9 microns wide</p><pre><code class="language-julia hljs">print(&quot;Airy size is 1.22λ/NA = $(airysize(conf1)/ um) μm&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Airy size is 1.22λ/NA = 9.267119999999998 μm</code></pre><p>We might thus want to consider a smaller numerical aperture:</p><pre><code class="language-julia hljs">lens2 = PhaseRetrieval.diaphragm(lens, 10mm)
+heatmap(rotr90(crop(p, 9)); axis=(aspect=DataAspect(),)) # show central 9 pixels</code></pre><img src="1f24e72f.png" alt="Example block output"/><p>Indeed, the Airy pattern should be about 9 microns wide</p><pre><code class="language-julia hljs">print(&quot;Airy size is 1.22λ/NA = $(airysize(conf1)/ um) μm&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Airy size is 1.22λ/NA = 9.267119999999998 μm</code></pre><p>We might thus want to consider a smaller numerical aperture:</p><pre><code class="language-julia hljs">lens2 = PhaseRetrieval.diaphragm(lens, 10mm)
 ims2 = PhaseRetrieval.ImagingSensor(; lens=lens2, cam=cam)
 conf2 = SimConfig(&quot;10mm aperture&quot;, ims2, 633nm)
 p2 = psf(conf2)
-heatmap(rotr90(crop(p2, 9)); axis=(aspect=DataAspect(),))</code></pre><img src="df31d92a.png" alt="Example block output"/><h3 id="Faster-creation-of-an-ImagingSensor"><a class="docs-heading-anchor" href="#Faster-creation-of-an-ImagingSensor">Faster creation of an <code>ImagingSensor</code></a><a id="Faster-creation-of-an-ImagingSensor-1"></a><a class="docs-heading-anchor-permalink" href="#Faster-creation-of-an-ImagingSensor" title="Permalink"></a></h3><p>Some often used cameras are saved in <a href="../../#PhaseRetrieval.camerasdict"><code>camerasdict</code></a> and <a href="../../#PhaseRetrieval.lensesdict"><code>lensesdict</code></a> dictionaries</p><pre><code class="language-julia hljs">keys(camerasdict)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">KeySet for a Dict{Any, Any} with 7 entries. Keys:
+heatmap(rotr90(crop(p2, 9)); axis=(aspect=DataAspect(),))</code></pre><img src="ff191b56.png" alt="Example block output"/><h3 id="Faster-creation-of-an-ImagingSensor"><a class="docs-heading-anchor" href="#Faster-creation-of-an-ImagingSensor">Faster creation of an <code>ImagingSensor</code></a><a id="Faster-creation-of-an-ImagingSensor-1"></a><a class="docs-heading-anchor-permalink" href="#Faster-creation-of-an-ImagingSensor" title="Permalink"></a></h3><p>Some often used cameras are saved in <a href="../../#PhaseRetrieval.camerasdict"><code>camerasdict</code></a> and <a href="../../#PhaseRetrieval.lensesdict"><code>lensesdict</code></a> dictionaries</p><pre><code class="language-julia hljs">keys(camerasdict)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">KeySet for a Dict{Any, Any} with 7 entries. Keys:
   &quot;UI1540&quot;
   &quot;UI3860&quot;
   &quot;UI1490&quot;
@@ -44,9 +44,9 @@ heatmap(rotr90(crop(p2, 9)); axis=(aspect=DataAspect(),))</code></pre><img src="
 	square pixel 5.3 μm, 
 	(1280, 1024) frame and 
 	8/8 bit/channel output.</code></pre><h3 id="Quantisation-and-exposure-level"><a class="docs-heading-anchor" href="#Quantisation-and-exposure-level">Quantisation and exposure level</a><a id="Quantisation-and-exposure-level-1"></a><a class="docs-heading-anchor-permalink" href="#Quantisation-and-exposure-level" title="Permalink"></a></h3><p>By default, the returned PSF approximates the output of a camera with finite bit resolution (8 bits in our case):</p><pre><code class="language-julia hljs">eltype(p2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">N0f8<span class="sgr90"> (alias for FixedPointNumbers.Normed{UInt8, 8})</span></code></pre><p>One can use <code>Images.jl</code> package to obtain images as saved by the camera: The whole frame:</p><pre><code class="language-julia hljs">using ImageCore
-save(&quot;psf2.png&quot;, Gray.(p2))</code></pre><p><img src="../psf2.png" alt/></p><p>Crop of the central part</p><pre><code class="language-julia hljs">Gray.(crop(p2, 21))</code></pre><img src="130e3c2b.svg" alt="Example block output"/><p>By default, the returned PSF is called between 0 and 1 (<a href="../../#PhaseRetrieval.AutoExposure"><code>AutoExposure</code></a> feature). This can be changed by passing additional parameters to <a href="../../#PhaseRetrieval.psf-Tuple{AbstractArray}"><code>psf</code></a> function. Here is an example of a PSF with 4 times longer exposure:</p><pre><code class="language-julia hljs">psf2_sat4 = psf(conf2; exposure=AutoExposure(4))
-Gray.(crop(psf2_sat4, 21))</code></pre><img src="5242c2e7.svg" alt="Example block output"/><p>The same psf in logarithmic scale:</p><pre><code class="language-julia hljs">Gray.(logrescale(float.(crop(psf2_sat4, 21))))</code></pre><img src="86712701.svg" alt="Example block output"/><p>And without quantisation:</p><pre><code class="language-julia hljs">psf2_sat4_float = psf(conf2; exposure=AutoExposure(4), quantize=false)
-Gray.(logrescale(crop(psf2_sat4_float, 21)))</code></pre><img src="2ec3c6d0.svg" alt="Example block output"/><h3 id="Adding-the-phase-aberration"><a class="docs-heading-anchor" href="#Adding-the-phase-aberration">Adding the phase aberration</a><a id="Adding-the-phase-aberration-1"></a><a class="docs-heading-anchor-permalink" href="#Adding-the-phase-aberration" title="Permalink"></a></h3><p>Now we can add some phase to our configuration. To add a modal phase represented by Zernike polynomials, we need to create the basis first. This creates it for the first 10 radial orders:</p><pre><code class="language-julia hljs">using PhaseBases
+save(&quot;psf2.png&quot;, Gray.(p2))</code></pre><p><img src="../psf2.png" alt/></p><p>Crop of the central part</p><pre><code class="language-julia hljs">Gray.(crop(p2, 21))</code></pre><img src="14809c88.svg" alt="Example block output"/><p>By default, the returned PSF is called between 0 and 1 (<a href="../../#PhaseRetrieval.AutoExposure"><code>AutoExposure</code></a> feature). This can be changed by passing additional parameters to <a href="../../#PhaseRetrieval.psf-Tuple{AbstractArray}"><code>psf</code></a> function. Here is an example of a PSF with 4 times longer exposure:</p><pre><code class="language-julia hljs">psf2_sat4 = psf(conf2; exposure=AutoExposure(4))
+Gray.(crop(psf2_sat4, 21))</code></pre><img src="ebc22947.svg" alt="Example block output"/><p>The same psf in logarithmic scale:</p><pre><code class="language-julia hljs">Gray.(logrescale(float.(crop(psf2_sat4, 21))))</code></pre><img src="48362ede.svg" alt="Example block output"/><p>And without quantisation:</p><pre><code class="language-julia hljs">psf2_sat4_float = psf(conf2; exposure=AutoExposure(4), quantize=false)
+Gray.(logrescale(crop(psf2_sat4_float, 21)))</code></pre><img src="3160fba6.svg" alt="Example block output"/><h3 id="Adding-the-phase-aberration"><a class="docs-heading-anchor" href="#Adding-the-phase-aberration">Adding the phase aberration</a><a id="Adding-the-phase-aberration-1"></a><a class="docs-heading-anchor-permalink" href="#Adding-the-phase-aberration" title="Permalink"></a></h3><p>Now we can add some phase to our configuration. To add a modal phase represented by Zernike polynomials, we need to create the basis first. This creates it for the first 10 radial orders:</p><pre><code class="language-julia hljs">using PhaseBases
 z10 = ZernikeBW(conf2, 10);</code></pre><p>The basis now contains 60 Zernike polynomials (in Born and Wolf form, normed by <em>rms</em> value), numbered in OSA/ANSI indexes. Elements of basis can be accessed as follows:</p><ul><li>by double indexing:</li></ul><pre><code class="language-julia hljs">using PhasePlots
 showphasetight(z10(; m=10, n=10) .* conf2.mask)[1]</code></pre><img src="cb616cf9.png" alt="Example block output"/><ul><li>by single index:</li></ul><pre><code class="language-julia hljs">showphasetight(z10(12) .* conf2.mask)[1]</code></pre><img src="d92c303e.png" alt="Example block output"/><p>This is a combination of some low-order Zernike polynomials</p><pre><code class="language-julia hljs">phase = ModalPhase([4, 6, 15, 16], [2, 1, 0.4, 0.3] * 2π, z10)
 showphasetight(phase .* conf2.mask)[1]</code></pre><img src="298f5f13.png" alt="Example block output"/><p>To apply this phase to the simulation configuration, apply it literally:</p><pre><code class="language-julia hljs">phase(conf2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Simulation configuration with the properties:
@@ -64,7 +64,7 @@ Imaging Sensor made with:
 with wavefront aberrrations: [&quot;aberration&quot;]
 with phase diversities String[]
 </code></pre><p>and check the PSF</p><pre><code class="language-julia hljs">p2 = psf(conf2)
-save(&quot;psf2_ab.png&quot;, Gray.(p2));</code></pre><p><img src="../psf2_ab.png" alt/></p><p>For this aberrated phase the PSF is larger and more details are visible in the logarithmic scale</p><pre><code class="language-julia hljs">showarray(logrescale(float(p2)))</code></pre><img src="10b9eb28.png" alt="Example block output"/><p>The <code>SimConfig</code>type is callable and, if applied to an array of proper dimensions, generates a psf</p><pre><code class="language-julia hljs">p2 = conf2(phase)
+save(&quot;psf2_ab.png&quot;, Gray.(p2));</code></pre><p><img src="../psf2_ab.png" alt/></p><p>For this aberrated phase the PSF is larger and more details are visible in the logarithmic scale</p><pre><code class="language-julia hljs">showarray(logrescale(float(p2)))</code></pre><img src="14b6e9cf.png" alt="Example block output"/><p>The <code>SimConfig</code>type is callable and, if applied to an array of proper dimensions, generates a psf</p><pre><code class="language-julia hljs">p2 = conf2(phase)
 showarray(p2, :grays)</code></pre><img src="1ff5d06e.png" alt="Example block output"/><h3 id="Adding-some-diversity"><a class="docs-heading-anchor" href="#Adding-some-diversity">Adding some diversity</a><a id="Adding-some-diversity-1"></a><a class="docs-heading-anchor-permalink" href="#Adding-some-diversity" title="Permalink"></a></h3><p>This creates a defocus of 1λ/4 amplitude:</p><pre><code class="language-julia hljs">defocus = 2π / 4 * z10(; n=2, m=0)
 showphase(collect(defocus .* conf2.mask))[1]</code></pre><img src="87b00733.png" alt="Example block output"/><p>Or we could better create diversities corressponding in the depth-of-focus lentgths, which is approximately the same</p><pre><code class="language-julia hljs">defocus = ZonalPhase(throughfocus(conf2, doflength(conf2)))
 showphase(collect(-(defocus .+ π / 2) .* conf2.mask))[1]</code></pre><img src="a22eab73.png" alt="Example block output"/><p>And now we add several diversities to our <code>conf2</code></p><pre><code class="language-julia hljs">for k in [-2, -1, 1, 2]
@@ -83,7 +83,7 @@ A = sqrt.(collect(Float64, p2))
 pr = PRproblem(a, A)
 sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true), APparam(; maxϵ=0.001)))
 showphasetight(fftshift(angle.(sol[1])) .* conf2.mask)[1]</code></pre><img src="73314c68.png" alt="Example block output"/><p>This doesn&#39;t work at the moment.  It might work if we let it iterate further</p><pre><code class="language-julia hljs">sol = solve(pr, (DRAPparam(β = 0.9,keephistory = true, maxit =1500), APparam(maxϵ = 0.001)))
-showphasetight(fftshift(angle.(sol[1])) .* conf2.mask)[1]</code></pre><p><img src="../../assets/PR_DRAP1500.png" alt="Output after 1500 iterations"/></p><p>The phase is perfectly reconstructed now, and  so here is the main problem of the AP-based PR algorithms –- they require quite  a long time to converge, even for the noiseless data.</p><p>Here is an attempt with the initial guess given by the simple subset method</p><pre><code class="language-julia hljs">th = 0.6 * maximum(A)
+showphasetight(fftshift(angle.(sol[1])) .* conf2.mask)[1]</code></pre><p><img src="../../assets/PR_DRAP1500.png" alt="Output after 1500 iterations"/></p><p>The phase is perfectly reconstructed now, and so here is the main problem of the AP-based PR algorithms –- they require quite a long time to converge, even for the noiseless data.</p><p>Here is an attempt with the initial guess given by the simple subset method</p><pre><code class="language-julia hljs">th = 0.6 * maximum(A)
 xth = copy(A)
 xth[A .&gt; th] .= 1
 xth[A .&lt;= th] .= 0
@@ -99,8 +99,8 @@ a = sqrt.(Float64.(conf2crop.ap))
 A = sqrt.(collect(Float64, pcrop))
 pr = PRproblem(a, A)
 sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true, maxit=550), APparam(; maxit=10)))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(ComplexF64[-0.5254181326402 + 0.8508441607561782im -0.8416163641351645 + 0.540075823954291im … -0.30164837657132393 + 0.9534192450920449im -0.06555882263171758 + 0.9978487063553989im; -0.8046182957052656 + 0.59379238645873im -0.954460598978909 + 0.2983369990410547im … -0.5672195381567174 + 0.8235666309007913im -0.5515556641980554 + 0.8341380876635727im; … ; -0.8052843318710963 + 0.5928888132212667im -0.7052486378060739 + 0.708960054497203im … -0.3191200660179792 + 0.9477142942177671im -0.35921977914798475 + 0.933252993710105im; -0.780491784958076 + 0.6251660368357805im -0.8902356235122956 + 0.4555003124364181im … -0.31425562328294177 + 0.9493384029075459im -0.1809547766354053 + 0.9834914177626721im], (lasty = ComplexF64[-0.5151363191878082 + 0.834194143570832im -0.9163068406576629 + 0.5880056437254149im … -0.27171275046340737 + 0.8588017889347133im -0.0686179893547525 + 1.044411250259734im; -0.8362493188717159 + 0.6171354558773479im -1.0130936067945244 + 0.31666399505867443im … -0.4869915557670689 + 0.7070807119295808im -0.4833889390470828 + 0.7310470209760536im; … ; -0.7247703178853209 + 0.5336105480043197im -0.6528235601573348 + 0.656259086477623im … -0.3321584000085719 + 0.9864351921226137im -0.3349544465211505 + 0.8702116590400688im; -0.6926785532669021 + 0.5548285251590085im -0.8476797821829456 + 0.43372607816680303im … -0.3268766130655991 + 0.9874652951432743im -0.18364476118385759 + 0.9981115165879573im], errhist = [1.1308558115531286, 1.6552320009470451, 0.9164379238270828, 0.7782890566852074, 0.7344615008703511, 0.6979312917404664, 0.6658312191766171, 0.6589608570730494, 0.663124198967275, 0.6282612603620824  …  0.3942958448664712, 0.38966208886858383, 0.3896365768427384, 0.3874786768048714, 0.3828253127465287, 0.3663423640663958, 0.3801632628244451, 0.38152569272215364, 0.3844313102124404, 0.3919284886238158], xhist = Matrix{ComplexF64}[], disthist = [1.1653506346855973, 0.9236646144982529, 0.8751176323179448, 0.8829744652049729, 0.9050513910527188, 0.9099235442844693, 0.9060836428783742, 0.9113413589169346, 0.9141784823457312, 0.8814625929026159  …  0.6568570381572684, 0.6558397685739191, 0.6535649951648127, 0.651611984701357, 0.6482438332604232, 0.6413256578129513, 0.6473604854857432, 0.6499570681255383, 0.6538915741909639, 0.6562494368222863], distgthist = Float64[], k = 560))</code></pre><p>sol = solve(pr, (DRAPparam(β = 0.9,keephistory = true), APparam(maxϵ = 0.001)))</p><pre><code class="language-julia hljs">showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]</code></pre><img src="ed42c100.png" alt="Example block output"/><p>You can try to change slightly the values of <code>β</code> above and see that algorithm might converge to another solution. This is another problem of AP-based algorithms.</p><pre><code class="language-julia hljs">sol = solve(pr, (DRAPparam(; β=0.91, keephistory=true, maxit=500), APparam(; maxit=10)))
-showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]</code></pre><img src="ca809b0b.png" alt="Example block output"/><p>Douglas-Rachford is known to eventully find the solution if you run it long enough: For instance, starting with <code>b</code>=0.91 would require about 20000 iteration to converge:</p><pre><code class="language-julia hljs">sol = solve(pr, (DRAPparam(; β=0.91, keephistory=true, maxit=20000), APparam(; maxit=100)))
-showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]</code></pre><img src="9b689830.png" alt="Example block output"/><p>Fortunately, julia is fast, so the calcualtions of 20K iterations take less then a minute.</p><h2 id="Using-phase-diversity"><a class="docs-heading-anchor" href="#Using-phase-diversity">Using phase diversity</a><a id="Using-phase-diversity-1"></a><a class="docs-heading-anchor-permalink" href="#Using-phase-diversity" title="Permalink"></a></h2><p>To use phase-diverse Phase Retrieval, we need to construct the phase diversities for the cropped configuration</p><pre><code class="language-julia hljs">z10 = ZernikeBW(conf2crop, 10);</code></pre><p>Then we know, that cropped PSFs correspond to different values of the same defocus</p><pre><code class="language-julia hljs"># defocus = 2π / 4 * z10(; n=2, m=0)
+showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]</code></pre><img src="ca809b0b.png" alt="Example block output"/><p>Douglas-Rachford is known to eventually find the solution if you run it long enough: For instance, starting with <code>b</code>=0.91 would require about 20000 iterations to converge:</p><pre><code class="language-julia hljs">sol = solve(pr, (DRAPparam(; β=0.91, keephistory=true, maxit=20000), APparam(; maxit=100)))
+showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]</code></pre><img src="9b689830.png" alt="Example block output"/><p>Fortunately, julia is fast, so the calculations of 20K iterations take less than a minute.</p><pre><code class="language-julia hljs">#</code></pre><h2 id="Using-phase-diversity"><a class="docs-heading-anchor" href="#Using-phase-diversity">Using phase diversity</a><a id="Using-phase-diversity-1"></a><a class="docs-heading-anchor-permalink" href="#Using-phase-diversity" title="Permalink"></a></h2><p>To use phase-diverse Phase Retrieval, we need to construct the phase diversities for the cropped configuration</p><pre><code class="language-julia hljs">z10 = ZernikeBW(conf2crop, 10);</code></pre><p>Then we know, that cropped PSFs correspond to different values of the same defocus</p><pre><code class="language-julia hljs"># defocus = 2π / 4 * z10(; n=2, m=0)
 defocus = ZonalPhase(throughfocus(conf2crop, doflength(conf2crop)))
 phases = [collect(k * defocus) for k in [0, 1, 2, -2, -1]] #TODO this should be automatized</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{Matrix{Float64}}:
  [-0.0 -0.0 … -0.0 -0.0; -0.0 -0.0 … -0.0 -0.0; … ; -0.0 -0.0 … -0.0 -0.0; -0.0 -0.0 … -0.0 -0.0]
@@ -116,36 +116,44 @@ showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2crop.mask)[1]</code></p
 ph_u = unwrap_LS(ph, conf2crop.ap)
 fig, ax, hm = showarray(bboxview(ph_u .* conf2crop.mask))
 Colorbar(fig[1, 2], hm)
-fig</code></pre><img src="b1579823.png" alt="Example block output"/><p>Now the phase in unwrapped and can be decomposed by the basis functions</p><pre><code class="language-julia hljs">restored_coef = PhaseBases.decompose(ph_u, z10)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">66-element Vector{Float64}:
- -8.35544606781769
- -0.0581508201294039
-  0.0008329905006959925
- 12.553061925827192
-  0.09183441026396617
-  6.316246230000472
-  0.0015333722676817462
- -0.037924354016935585
- -0.0119396830831396
-  0.025673922795123243
+fig</code></pre><img src="b1579823.png" alt="Example block output"/><p>Now the phase is unwrapped and can be decomposed by the basis functions</p><pre><code class="language-julia hljs">restored_coef = PhaseBases.decompose(ph_u, z10)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">66-element Vector{Float64}:
+ -8.335685028087328
+ -0.027518615995034246
+  0.002014718992096931
+ 12.554913340021752
+  0.016683479278846336
+  6.307883905018304
+  0.008188462480354541
+  0.02351561987794848
+ -0.00928632688402864
+  0.02465664971689563
   ⋮
- -1.3529913680438184
-  0.011129617127098767
-  0.37764852463831294
-  0.22500586463157865
- -1.0512241927894046
-  1.443336268274138
- -0.5092335394808718
- -0.8306833351308945
- -0.6865093164615218</code></pre><p>and compare the restored coefficients with the original ones</p><pre><code class="language-julia hljs">fig = Figure();
-Axis(fig[1, 1]);
-scatter!(phase.coef)
-scatter!(restored_coef)
-fig</code></pre><img src="d315bb71.png" alt="Example block output"/><p>The error is mainly present in the high rder polynomials, which might be an artifact of the decompostion (mumerical integration) with low resolution.  We can compare the phases themselves</p><pre><code class="language-julia hljs">ph_u .-= restored_coef[1]
+ -0.002603635629978396
+  0.007246450503645918
+ -0.11377083982664526
+ -0.0008371394467213689
+ -0.055066775592643
+ -0.04969669801575527
+  0.006978496050594418
+  0.011932008445474374
+ -0.010146293136306994</code></pre><p>and compare the restored coefficients with the original ones</p><pre><code class="language-julia hljs">fig = Figure();
+ax = Axis(fig[1, 1]);
+scatter!(phase.coef; label=&quot;original&quot;)
+scatter!(restored_coef; label=&quot;restored&quot;)
+ax.title = &quot;Original vs restored Zernike coefficients&quot;
+axislegend()
+
+err_coef = restored_coef .- phase.coef
+err_coef[1] = 0
+ax, _ = scatter(fig[2, 1], err_coef)
+ax.title = &quot;Coefficient restoration error&quot;
+fig</code></pre><img src="f0359bb1.png" alt="Example block output"/><p>The error is quite small, although we see it increasing for high-order aberrations.  We can compare the phases themselves and see the error appearing on the edges.</p><pre><code class="language-julia hljs">ph_u .-= restored_coef[1]
 phase_crop = ModalPhase(phase.coef, z10)
 err = (ph_u .- phase_crop)
 fig, ax, hm = showarray(bboxview(err .* conf2crop.mask))
 Colorbar(fig[1, 2], hm)
-fig</code></pre><img src="3842d3d0.png" alt="Example block output"/><p>Try with high-res phase</p><pre><code class="language-julia hljs">z10 = ZernikeBW(conf2, 10);
+ax.title = &quot;Phase restoration error, rms = $(round(maskedrmse(err, z10.ap), digits = 3))&quot;
+fig</code></pre><img src="9a13553d.png" alt="Example block output"/><p>Try with high-res phase</p><pre><code class="language-julia hljs">z10 = ZernikeBW(conf2, 10);
 defocus = 2π / 4 * z10(; n=2, m=0)
 defocus = ZonalPhase(throughfocus(conf2, doflength(conf2)))
 phases = [collect(k * defocus) for k in [0, 1, 2, -2, -1]] #TODO this should be automatized
@@ -160,40 +168,44 @@ ph_u = unwrap_LS(ph, conf2.ap)
 fig, ax, hm = showarray(bboxview(ph_u .* conf2.mask))
 ax.aspect = 1
 Colorbar(fig[1, 2], hm)
-fig</code></pre><img src="8e8da18c.png" alt="Example block output"/><p>Now the phase in unwrapped and can be decomposed by the basis functions</p><pre><code class="language-julia hljs">restored_coef = PhaseBases.decompose(ph_u, z10)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">66-element Vector{Float64}:
- -8.443597250564972
- -0.03416279475353225
- -0.0022050304512965697
- 12.519349935177067
-  0.010116196391974345
-  6.259971123185734
-  0.00416574556965056
-  0.017365028165421403
- -0.011140367154888154
- -0.0013053882744210076
+fig</code></pre><img src="8e8da18c.png" alt="Example block output"/><p>Now the phase is unwrapped and can be decomposed by the basis functions</p><pre><code class="language-julia hljs">restored_coef = PhaseBases.decompose(ph_u, z10)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">66-element Vector{Float64}:
+ -8.444566045709497
+ -0.033588730583119286
+ -0.002214406403343361
+ 12.51925969178433
+  0.0016513221995758665
+  6.267601574558297
+  0.0015548047447686564
+  0.018431386324099908
+ -0.01115804863956349
+ -0.001273584331052291
   ⋮
-  0.018785421689228695
-  0.016766617407577344
- -0.11229779558735362
-  0.028330519322710915
- -0.09494643806828665
- -0.02961183206163575
- -0.010415703386389431
-  0.05732653774492483
- -0.05824993289707349</code></pre><p>and compare the restored coefficients with the original ones</p><pre><code class="language-julia hljs">fig = Figure();
-Axis(fig[1, 1]);
-scatter!(phase.coef)
-scatter!(restored_coef)
-fig</code></pre><img src="8791030c.png" alt="Example block output"/><p>The error is error is greatly reduced. Here is the plot of the coefficient differences (with piston ignored)</p><pre><code class="language-julia hljs">err_coef = (phase.coef .- restored_coef)[2:end]
-fig, ax, sc = barplot(err_coef)
-ax.title = &quot;RMS error = $(norm(err_coef))&quot;
-fig</code></pre><img src="cbdfcdb6.png" alt="Example block output"/><p>We can compare the phases themselves</p><pre><code class="language-julia hljs">ph_u .-= restored_coef[1]
+  0.004547809526379131
+  0.0026060430169634816
+ -0.09339039954370518
+ -0.0028455537942268135
+ -0.04609732436065401
+ -0.05267996730039539
+  0.012473078507566702
+  0.006079128655330071
+ -0.0009131137316366403</code></pre><p>and compare the restored coefficients with the original ones</p><pre><code class="language-julia hljs">fig = Figure();
+ax = Axis(fig[1, 1]);
+scatter!(phase.coef; label=&quot;original&quot;)
+scatter!(restored_coef; label=&quot;restored&quot;)
+ax.title = &quot;Original vs restored Zernike coefficients&quot;
+axislegend()
+
+err_coef = restored_coef .- phase.coef
+err_coef[1] = 0
+ax, _ = scatter(fig[2, 1], err_coef)
+ax.title = &quot;Coefficient restoration error&quot;
+fig</code></pre><img src="2bf872a4.png" alt="Example block output"/><p>The error is error is about the same.</p><p>We can compare the phases themselves</p><pre><code class="language-julia hljs">ph_u .-= restored_coef[1]
 err = (ph_u .- phase)
-fig, ax, hm = showarray(bboxview(err .* conf2.mask))
+fig, ax, hm = showarray(bboxview(err .* conf2.mask));
 ax.aspect = 1
 Colorbar(fig[1, 2], hm)
 ax.title = &quot;Phase rmse = $(PhaseUtils.maskedphasermse(ph_u, phase, conf2.ap)/(2π)) λ&quot;
-fig</code></pre><img src="fa763d88.png" alt="Example block output"/><p>The quite big error in the coefficient restoration compared with a the erro magnitude in the phases can be expained by the numerical error of decomposiotion by Zernikes. Here is , for instance, result of decompostion of the input phase:</p><pre><code class="language-julia hljs">rest = PhaseBases.decompose(collect(phase), z10)
+fig</code></pre><img src="916f34d2.png" alt="Example block output"/><p>The quite big error in the coefficient restoration compared with the error magnitude in the phases <em>is not</em> the numerical error of decomposition by Zernikes. Here is, for instance, the result of the decomposition of the input phase:</p><pre><code class="language-julia hljs">rest = PhaseBases.decompose(collect(phase), z10)
 scatter(phase.coef)
 scatter!(rest)
-current_figure()</code></pre><img src="9f849331.png" alt="Example block output"/><p>But the error grows witht the index of the Zernike:</p><pre><code class="language-julia hljs">scatter(rest .- phase.coef; axis=(title=&quot;RMS error = $( norm(rest .- phase.coef))&quot;,))</code></pre><img src="561843b3.png" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../about/">« About</a><a class="docs-footer-nextpage" href="../Hardware/">Forward model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Thursday 1 February 2024 15:57">Thursday 1 February 2024</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+current_figure()</code></pre><img src="98363318.png" alt="Example block output"/><p>But the error grows with the index of the Zernike:</p><pre><code class="language-julia hljs">scatter(rest .- phase.coef; axis=(title=&quot;RMS error = $( norm(rest .- phase.coef))&quot;,))</code></pre><img src="4871d2e8.png" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../about/">« About</a><a class="docs-footer-nextpage" href="../Hardware/">Forward model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Monday 19 February 2024 17:08">Monday 19 February 2024</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
