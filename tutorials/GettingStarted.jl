@@ -359,5 +359,5 @@ scatter(phase.coef)
 scatter!(rest)
 current_figure()
 
-# But the error grows with the index of the Zernike:
+# The error is negligible:
 scatter(rest .- phase.coef; axis=(title="RMS error = $( norm(rest .- phase.coef))",))

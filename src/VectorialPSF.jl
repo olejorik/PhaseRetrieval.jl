@@ -1,3 +1,5 @@
+export incoherent_psf
+
 function get_cosines(conf::SimConfig)
     ddom = conf.dualroi * (1 / focallength(conf))
     σx, σy = getranges(ddom)
@@ -27,4 +29,44 @@ function get_polarization_magnitudes(conf::SimConfig)
         end
     end
     return (exx=exx, eyx=eyx, ezx=ezx, exy=exy, eyy=eyy, ezy=ezy)
+end
+
+"""
+    incoherent_psf(array<:Array)
+
+Calculate 2D array corresponding to the incoherent sum of the PSF formed by slices `array[:,:,ind...]` for all possible indici `ind`.
+
+```jldoctest
+julia> incoherent_psf(ones(3,3,2,3))
+3×3 Matrix{Float64}:
+ 0.0    0.0  0.0
+ 0.0  486.0  0.0
+ 0.0    0.0  0.0
+
+julia> incoherent_psf(ones(4,4,2,2,1))
+4×4 Matrix{Float64}:
+ 0.0  0.0     0.0  0.0
+ 0.0  0.0     0.0  0.0
+ 0.0  0.0  1024.0  0.0
+ 0.0  0.0     0.0  0.0
+
+julia> incoherent_psf(ones(4,4))
+4×4 Matrix{Float64}:
+ 0.0  0.0    0.0  0.0
+ 0.0  0.0    0.0  0.0
+ 0.0  0.0  256.0  0.0
+ 0.0  0.0    0.0  0.0
+
+```
+"""
+function incoherent_psf(array::Array)
+    arr_dims = ndims(array)
+    arr_dims > 1 || error("Array should have at least 2 dimensions")
+
+    ret = zeros(size(array)[1:2])
+    for f in eachslice(array; dims=Tuple(3:arr_dims))
+        ret .+= psf(f)
+    end
+
+    return ret
 end

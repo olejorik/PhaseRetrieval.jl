@@ -29,6 +29,7 @@ export removepiston, removetiptilt, twinphase
 # export Linear
 
 include("types.jl")
+include("Field.jl")
 include("hardware.jl")
 include("utils.jl")
 include("ShackHartmann/SHphase.jl")
