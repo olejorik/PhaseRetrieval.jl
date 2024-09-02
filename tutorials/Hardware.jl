@@ -174,7 +174,7 @@ fig
 # For this aberrated phase the PSF is larger
 
 p2 = psf(conf2.ap, phase)
-showarray(p2, :grays)
+showarray(p2; colormap=:grays)
 
 # More details are visible in the logarithmic scale
 
@@ -184,4 +184,4 @@ showarray(PhaseRetrieval.logrescale(p2))
 # generates a psf
 
 p2 = conf2(phase)
-showarray(p2, :grays)
+showarray(p2; colormap=:grays)

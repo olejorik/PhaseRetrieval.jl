@@ -41,7 +41,7 @@ ims = ImagingSensor(; lens=lens, cam=cam)
 
 conf1 = SimConfig("full_aperture", ims, 633nm)
 
-# This creates a simulation configuration for the generation of a PSF using [`Fourier`](@ref) methods.
+# This creates a simulation configuration for the generation of a PSF using [`PSFMethods.Fourier`](@ref) methods.
 # If we check near the central pixel, we'll see that for this configuration the PSF is
 # almost one pixel wide.
 # To crop central part of the image, we'll use `crop` function from `PhaseUtils` package.
@@ -140,17 +140,17 @@ nothing #hide
 showarray(logrescale(float(p2)))
 
 # The `SimConfig`type is callable and, if applied to an array of proper dimensions,
-# generates a psf
+# generates a PSF:
 
 p2 = conf2(phase)
-showarray(p2, :grays)
+showarray(p2; colormap=:grays)
 
 # ### Adding some diversity
 # This creates a defocus of 1λ/4 amplitude:
 defocus = 2π / 4 * z10(; n=2, m=0)
 showphase(collect(defocus .* conf2.mask))[1]
 
-#  Or we could better create diversities corressponding in the depth-of-focus lentgths,
+#  Or we could better create diversities corresponding in the depth-of-focus lengths,
 # which is approximately the same
 defocus = ZonalPhase(throughfocus(conf2, doflength(conf2)))
 showphase(collect(-(defocus .+ π / 2) .* conf2.mask))[1]
@@ -242,7 +242,7 @@ showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 
 # Fortunately, julia is fast, so the calculations of 20K iterations take less than a minute.
 
-##
+#
 # ## Using phase diversity
 #  To use phase-diverse Phase Retrieval, we need to construct the phase diversities for the cropped configuration
 z10 = ZernikeBW(conf2crop, 10);

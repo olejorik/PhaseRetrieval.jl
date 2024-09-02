@@ -1,5 +1,12 @@
 export incoherent_psf
 
+"""
+    σz(σx, σy)
+
+Calculate σz from the values of the other cosines
+"""
+σz(σx, σy) = sqrt(1 - σx^2 - σy^2)
+
 function get_cosines(conf::SimConfig)
     ddom = conf.dualroi * (1 / focallength(conf))
     σx, σy = getranges(ddom)
@@ -24,7 +31,7 @@ function get_polarization_magnitudes(conf::SimConfig)
             eyx[i] = -x * y * zfactor
             ezx[i] = -x
             exy[i] = -x * y * zfactor
-            eyy[i] = 1 - x^2 * zfactor
+            eyy[i] = 1 - y^2 * zfactor
             ezy[i] = -y
         end
     end
