@@ -5,12 +5,12 @@ export incoherent_psf
 
 Calculate σz from the values of the other cosines
 """
-σz(σx, σy) = sqrt(1 - σx^2 - σy^2)
+σz(σx, σy) = sqrt(1 + 0im - σx^2 - σy^2) # convert to complex to allow complex sigmas
 
 function get_cosines(conf::SimConfig)
     ddom = conf.dualroi * (1 / focallength(conf))
     σx, σy = getranges(ddom)
-    σs = (σz(σ...) - 1 for σ in ddom)
+    σs = (σz(σ...) for σ in ddom)
     return (σx=σx, σy=σy, σz=σs)
 end
 
@@ -18,12 +18,18 @@ function get_polarization_magnitudes(conf::SimConfig)
     ddom = conf.dualroi * (1 / focallength(conf))
     inaperture = (!isnan).(conf.mask)
     # σx, σy = getranges(ddom)
-    exx = Array{Float64}(undef, size(ddom))
-    eyx = Array{Float64}(undef, size(ddom))
-    ezx = Array{Float64}(undef, size(ddom))
-    exy = Array{Float64}(undef, size(ddom))
-    eyy = Array{Float64}(undef, size(ddom))
-    ezy = Array{Float64}(undef, size(ddom))
+    # exx = Array{Float64}(undef, size(ddom))
+    # eyx = Array{Float64}(undef, size(ddom))
+    # ezx = Array{Float64}(undef, size(ddom))
+    # exy = Array{Float64}(undef, size(ddom))
+    # eyy = Array{Float64}(undef, size(ddom))
+    # ezy = Array{Float64}(undef, size(ddom))
+    exx = zeros(size(ddom))
+    eyx = zeros(size(ddom))
+    ezx = zeros(size(ddom))
+    exy = zeros(size(ddom))
+    eyy = zeros(size(ddom))
+    ezy = zeros(size(ddom))
     for (i, (y, x)) in enumerate(ddom)
         if inaperture[i]
             zfactor = 1 / (1 + σz(x, y))
@@ -36,6 +42,18 @@ function get_polarization_magnitudes(conf::SimConfig)
         end
     end
     return (exx=exx, eyx=eyx, ezx=ezx, exy=exy, eyy=eyy, ezy=ezy)
+end
+
+function get_obliquity_factor(conf::SimConfig)
+    ddom = conf.dualroi * (1 / focallength(conf))
+    inaperture = (!isnan).(conf.mask)
+    ret = ones(size(ddom))
+    for (i, (y, x)) in enumerate(ddom)
+        if inaperture[i]
+            ret[i] = 1 / sqrt(real(σz(x, y)))
+        end
+    end
+    return ret
 end
 
 """
