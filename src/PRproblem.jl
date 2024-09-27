@@ -109,6 +109,49 @@ function TwoSetsFP(pr::PDPRproblem)
     return TwoSetsFP(adiv, Adiv)
 end
 
+
+### Vectorial PR
+"""
+  VectorialPRproblem(a, [Aᵢ], [ϕᵢ])
+
+Vectorial phase-retrieval problem of finding complex arrays xᵢ, Xᵢ such that
+  |xᵢ| = a pᵢ, Σᵢ|Xᵢ|² = A², where F denotes the Fourier transform and pᵢ are the predefined amplitude modulation factors (i≤6).
+Note that the problem is not required to be consistent.
+
+    VectorialPRproblem(a, [Aᵢ], [ϕᵢ] ; center = true, renormalize = true) -> PDPRproblem
+
+Default constructor for PDPRproblem from the arrays which origin is supposed to be at their center and  array Aᵢ are renormalised to satisfy the Parseval equation.
+"""
+struct VectorialPRproblem{T<:Real,N} <: AbstractPRproblem
+    a::Array{T,N}
+    A::Array{T,N}
+    modes::Vector{Array{T,N}}
+
+    function VectorialPRproblem(
+        a::Array{T,N},
+        A::Array{T,N},
+        modes::Vector{Array{T,N}};
+        center=true,
+        renormalize=true,
+    ) where {T,N}
+        A1 = renormalize ? enforceParseval(A, a) : A # TODO fix for 6 polarizatons?
+        shift = center ? fftshift : x -> x
+        return new{eltype(A1),N}(shift(a), shift(A1), shift.(modes))
+    end
+
+end
+
+# VectorialPRproblem can be converted to a feasibility problem
+function TwoSetsFP(pr::VectorialPRproblem)
+    N = ndims(pr.A)
+    aset = AlternatingProjections.ScaledCopies(
+        AlternatingProjections.ConstrainedByAmplitude(pr.a), pr.modes
+    )
+
+    Adiv = FourierTransformedSet(LCSet(pr.A, (N + 1,), (N + 1,)), Tuple(1:N))
+    return TwoSetsFP(aset, Adiv)
+end
+
 # methods to solve
 
 abstract type PRalgorithm <: Algorithm end
