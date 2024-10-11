@@ -55,7 +55,7 @@ julia> imf = PhaseRetrieval.toimageplane(ap);
 
 julia> cam = camerasdict["UI3860"];
 
-julia> cam(imf, AutoExposure(.7)) |> collect
+julia> cam(imf; exposure = AutoExposure(.7)) |> collect
 9×9 Array{N4f12,2} with eltype FixedPointNumbers.N4f12:
  0.0051  0.0  0.0122  0.0427  0.0601  0.0427  0.0122  0.0  0.0051
  0.0     0.0  0.0     0.0     0.0     0.0     0.0     0.0  0.0
@@ -71,11 +71,15 @@ julia> cam(imf, AutoExposure(.7)) |> collect
 
 """
 Base.@kwdef struct CameraChip
-    pixelsize::Float64
+    pixelsize::Tuple{Float64,Float64}
     imagesize::Tuple{Int,Int}
     bitdepth::Int = 8
     channelbitdepth::Int = 8
 end
+
+CameraChip(pixelsize::Float64, imagesize, bitdepth, channelbitdepth) =
+    CameraChip((pixelsize, pixelsize), imagesize, bitdepth, channelbitdepth)
+
 
 #simple function to redefine the camera size
 """
@@ -117,6 +121,8 @@ storagetypefun(::Val{10}, ::Val{16}) = N6f10
 storagetypefun(::Val{12}, ::Val{16}) = N4f12
 storagetypefun(::Val{14}, ::Val{16}) = N2f114
 storagetypefun(::Val{16}, ::Val{16}) = N0f16
+
+storagetypefun(::Val{-1}, ::Val{-1}) = Float64 # for abstract cameras without quantisation
 
 """
     getstoragetype(cam::CameraChip)
@@ -312,7 +318,7 @@ end
 function show(io::IO, x::CameraChip)
     return print(
         io,
-        "Camera with \n\tsquare pixel $(x.pixelsize/um) μm, \n\t$(x.imagesize) frame and \n\t$(x.bitdepth)/$(x.channelbitdepth) bit/channel output.",
+        "Camera with \n\tpixel size $(x.pixelsize[1]/um) × $(x.pixelsize[2]/um) μm², \n\t$(x.imagesize) frame and \n\t$(x.bitdepth)/$(x.channelbitdepth) bit/channel output.",
     )
 end
 

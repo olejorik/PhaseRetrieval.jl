@@ -3,7 +3,7 @@ using LinearAlgebra
 using Statistics
 using FFTW
 using SampledDomains: CartesianDomain2D, dualRange, dualDomain
-import Base: show
+import Base: show, collect
 import SampledDomains: make_centered_domain2D, getranges
 using PhaseBases
 using ImageCore
@@ -32,6 +32,8 @@ include("types.jl")
 include("Field.jl")
 include("hardware.jl")
 include("utils.jl")
+include("functions.jl")
+include("methods.jl")
 include("ShackHartmann/SHphase.jl")
 include("PSF.jl")
 include("VectorialPSF.jl")

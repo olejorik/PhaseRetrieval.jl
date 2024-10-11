@@ -112,15 +112,15 @@ end
 
 ### Vectorial PR
 """
-  VectorialPRproblem(a, [Aᵢ], [ϕᵢ])
+  VectorialPRproblem(a, A, [pᵢ])
 
 Vectorial phase-retrieval problem of finding complex arrays xᵢ, Xᵢ such that
   |xᵢ| = a pᵢ, Σᵢ|Xᵢ|² = A², where F denotes the Fourier transform and pᵢ are the predefined amplitude modulation factors (i≤6).
 Note that the problem is not required to be consistent.
 
-    VectorialPRproblem(a, [Aᵢ], [ϕᵢ] ; center = true, renormalize = true) -> PDPRproblem
+    VectorialPRproblem(a, A, [pᵢ] ; center = true, renormalize = true) -> PDPRproblem
 
-Default constructor for PDPRproblem from the arrays which origin is supposed to be at their center and  array Aᵢ are renormalised to satisfy the Parseval equation.
+Default constructor for VectorialPRproblem from the arrays which origin is supposed to be at their center and  array A are renormalised to satisfy the Parseval equation.
 """
 struct VectorialPRproblem{T<:Real,N} <: AbstractPRproblem
     a::Array{T,N}
@@ -134,7 +134,7 @@ struct VectorialPRproblem{T<:Real,N} <: AbstractPRproblem
         center=true,
         renormalize=true,
     ) where {T,N}
-        A1 = renormalize ? enforceParseval(A, a) : A # TODO fix for 6 polarizatons?
+        A1 = renormalize ? enforceParseval(A, a .* stack(modes), 1:(N - 1)) : A # TODO fix for 6 polarizatons?
         shift = center ? fftshift : x -> x
         return new{eltype(A1),N}(shift(a), shift(A1), shift.(modes))
     end
@@ -145,7 +145,7 @@ end
 function TwoSetsFP(pr::VectorialPRproblem)
     N = ndims(pr.A)
     aset = AlternatingProjections.ScaledCopies(
-        AlternatingProjections.ConstrainedByAmplitude(pr.a), pr.modes
+        AlternatingProjections.ConstrainedByShape(pr.a), pr.modes
     )
 
     Adiv = FourierTransformedSet(LCSet(pr.A, (N + 1,), (N + 1,)), Tuple(1:N))

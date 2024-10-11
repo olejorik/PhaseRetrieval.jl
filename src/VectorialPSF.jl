@@ -1,4 +1,4 @@
-export incoherent_psf
+export incoherent_psf, vectorial_psf, vectorial_diversed_psfs
 
 """
     σz(σx, σy)
@@ -94,4 +94,67 @@ function incoherent_psf(array::Array)
     end
 
     return ret
+end
+
+function _vectorial_sim_config(
+    name::String, ims::ImagingSensor, λ::Float64, ::RandomPolarization
+)
+    conf = SimConfig(name, ims, λ)
+    o = get_obliquity_factor(conf)
+    pol_modes = get_polarization_magnitudes(conf)
+    # for k in keys(pol_modes)
+    #     conf.modulation[String(k)] = pol_modes[k] .* o
+    # end
+    conf.modulation["vectorial"] = stack(values(pol_modes)) .* o
+    return conf
+end
+
+function _vectorial_sim_config(
+    name::String, ims::ImagingSensor, λ::Float64, p::LinearPolarization
+)
+    conf = SimConfig(name, ims, λ)
+    pol_modes = get_polarization_magnitudes(conf)
+    o = get_obliquity_factor(conf)
+    a = p.orientation_angle
+    # for c in ["x", "y", "z"]
+    #     conf.modulation[c] =
+    #         (cos(a) * pol_modes[Symbol("e$(c)x")] + sin(a) * pol_modes[Symbol("e$(c)y")]) .*
+    #         o
+    # end
+    conf.modulation["vectorial"] =
+        stack([
+            (cos(a) * pol_modes[Symbol("e$(c)x")] + sin(a) * pol_modes[Symbol("e$(c)y")])
+            for c in ["x", "y", "z"]
+        ]) .* o
+    return conf
+end
+
+function vectorial_psf(c::SimConfig{T}; kwargs...) where {T}
+    # focalfield = toimageplane(pupilfield(c), algtype(c))
+    # return ret = c.ims.cam(focalfield, exposure, quantize, noise)
+    # TODO add noise
+    # TODO make consistent with the scalar
+    haskey(c.modulation, "vectorial") ||
+        error("Config named `$(c.name)` is not initialised for vectorial simulation")
+    return c.ims.cam(incoherent_psf(pupilfield(c) .* c.modulation["vectorial"]); kwargs...)
+end
+
+function vectorial_diversed_psfs(c::SimConfig{T}; kwargs...) where {T}
+    haskey(c.modulation, "vectorial") ||
+        error("Config named `$(c.name)` is not initialised for vectorial simulation")
+
+    div_fields =
+    # vcat(
+    # [pupilfield(c)],
+    [field(pupilfield(c), collect(d)) for d in values(c.diversity)]
+    # )
+    # return [
+    #     c.ims.cam(toimageplane(f, algtype(c)), exposure, quantize, noise) for
+    #     f in div_fields
+    # ]
+    return [
+        c.ims.cam(
+            incoherent_psf(pupilfield(c) .* f .* c.modulation["vectorial"]); kwargs...
+        ) for f in div_fields
+    ]
 end

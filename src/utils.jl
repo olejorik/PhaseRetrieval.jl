@@ -204,12 +204,14 @@ function ap_ratio(s, f, apertureD, λ)
     return q
 end
 
+ap_ratio(s::Tuple, f, apertureD, λ) = ap_ratio.(s, f, apertureD, λ)
+
 function ap_ratio(ims::ImagingSensor, λ)
-    return ap_ratio(ims.cam.pixelsize, ims.lens.focallength, ims.lens.aperture, λ)
+    return ap_ratio.(ims.cam.pixelsize, ims.lens.focallength, ims.lens.aperture, λ)
 end
 
 function upscaleFactor(s, f, apertureD, λ)
-    return ceil(Int, ap_ratio(s, f, apertureD, λ))
+    return ceil.(Int, ap_ratio(s, f, apertureD, λ))
 end
 
 function upscaleFactor(ims::ImagingSensor, λ)
@@ -217,10 +219,10 @@ function upscaleFactor(ims::ImagingSensor, λ)
 end
 
 function make_centered_domain2D(ims::ImagingSensor)
-    return make_centered_domain2D(ims.cam.imagesize..., ims.cam.pixelsize)
+    return make_centered_domain2D(ims.cam.imagesize..., ims.cam.pixelsize...)
 end
 function make_centered_domain2D(hw::hwConfig)
-    return make_centered_domain2D(hw.cam.imagesize..., hw.cam.pixelsize)
+    return make_centered_domain2D(hw.cam.imagesize..., hw.cam.pixelsize...)
 end
 
 """
@@ -288,15 +290,25 @@ end
 
 Renormalise `A` so its 2-norm is equal to the 2-norm of `fft(a)`.
 """
-function enforceParseval!(A, a)
-    n = sqrt(sum(abs2, fft(a))) / sqrt(sum(abs2, A))
+function enforceParseval!(A, a, dim=1:ndims(a))
+    n = sqrt(sum(abs2, fft(a, dim))) / sqrt(sum(abs2, A))
     for i in eachindex(A)
         A[i] *= n
     end
     return A
 end
 
-function enforceParseval(A, a)
+"""
+    enforceParseval(A, a)
+
+Return scaled copy of `A` so its 2-norm is equal to the 2-norm of `fft(a[, dim] )`.
+"""
+function enforceParseval(A, a, dim=1:ndims(a))
     A1 = copy(A)
-    return enforceParseval!(A1, a)
+    return enforceParseval!(A1, a, dim)
 end
+
+myabs2(x) = abs(x)^2
+# myabs2(x) = abs2(x)
+
+field(amplitude, phase) = amplitude .* exp.(1im * collect(phase)) # use collect here for ModalPhase
