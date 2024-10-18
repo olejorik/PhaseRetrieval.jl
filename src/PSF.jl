@@ -172,6 +172,16 @@ apdiameter(c::SimConfig) = apdiameter(c.ims)
 
 airysize(c::SimConfig) = 1.22 * wavelength(c) * focallength(c) / apdiameter(c)
 
+
+function gaussian_apodization(aplevel, conf::SimConfig)
+    qqq = SampledDomain(
+        (x, y) -> exp(x^2 * log(aplevel[1]) + y^2 * log(aplevel[2])),
+        2 / apdiameter(conf) * conf.dualroi,
+    )
+    return qqq.vals
+end
+
+
 import PhaseBases: ZernikeBW, ModalPhase
 ZernikeBW(c::SimConfig{PSFMethods.Fourier}, order=10) =
     ZernikeBW(c.dualroi, apdiameter(c), order)

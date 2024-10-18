@@ -2,7 +2,7 @@ module PhaseRetrieval
 using LinearAlgebra
 using Statistics
 using FFTW
-using SampledDomains: CartesianDomain2D, dualRange, dualDomain
+using SampledDomains: CartesianDomain2D, dualRange, dualDomain, SampledDomain
 import Base: show, collect
 import SampledDomains: make_centered_domain2D, getranges
 using PhaseBases
@@ -25,6 +25,7 @@ using AlternatingProjections
 export SHdiversity
 export psf, subpsf, logrescale
 export removepiston, removetiptilt, twinphase
+export gaussian_apodization
 
 # export Linear
 
