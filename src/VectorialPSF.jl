@@ -146,7 +146,7 @@ function vectorial_diversed_psfs(c::SimConfig{T}; kwargs...) where {T}
     div_fields =
     # vcat(
     # [pupilfield(c)],
-    [field(pupilfield(c), collect(d)) for d in values(c.diversity)]
+    [cis.(d) for d in values(c.diversity)]
     # )
     # return [
     #     c.ims.cam(toimageplane(f, algtype(c)), exposure, quantize, noise) for

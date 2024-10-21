@@ -2,7 +2,7 @@ module PhaseRetrieval
 using LinearAlgebra
 using Statistics
 using FFTW
-using SampledDomains: CartesianDomain2D, dualRange, dualDomain, SampledDomain
+using SampledDomains: CartesianDomain2D, dualRange, dualDomain
 import Base: show, collect
 import SampledDomains: make_centered_domain2D, getranges
 using PhaseBases
