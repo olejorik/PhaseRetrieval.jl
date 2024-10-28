@@ -226,13 +226,17 @@ conf2crop = SimConfig("10mm aperture", ims2crop, 633nm)
 a = sqrt.(Float64.(conf2crop.ap))
 A = sqrt.(collect(Float64, pcrop))
 pr = PRproblem(a, A)
-sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true, maxit=550), APparam(; maxit=10)))
+@time sol = solve(
+    pr, (DRAPparam(; β=0.9, keephistory=true, maxit=550), APparam(; maxit=10))
+)
 # sol = solve(pr, (DRAPparam(β = 0.9,keephistory = true), APparam(maxϵ = 0.001)))
 showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 
 # You can try to change slightly the values of `β` above and see that algorithm
 # might converge to another solution. This is another problem of AP-based algorithms.
-sol = solve(pr, (DRAPparam(; β=0.91, keephistory=true, maxit=500), APparam(; maxit=10)))
+@time sol = solve(
+    pr, (DRAPparam(; β=0.91, keephistory=true, maxit=500), APparam(; maxit=10))
+)
 showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 
 # Douglas-Rachford is known to eventually find the solution if you run it long enough:
@@ -264,7 +268,7 @@ pr = PDPRproblem(a, A, phases)
 
 
 # As expected, using phase diversities accelerates the phase retrieval a lot
-sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true, maxit=50), APparam(; maxit=50)))
+@time sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true, maxit=50), APparam(; maxit=50)))
 showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2crop.mask)[1]
 
 # And now it should be also less sensitive to the parameter choice.

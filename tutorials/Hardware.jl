@@ -74,8 +74,8 @@ Gray.(
 # Without the quantizations, the fields are the same:
 Gray.(
     mosaicview(
-        logrescale(float.(cam8bit(imf, AutoExposure(1), false))),
-        logrescale(float.(cam12bit(imf, AutoExposure(1), false)));
+        logrescale(float.(cam8bit(imf; exposure=AutoExposure(1), quantize=false))),
+        logrescale(float.(cam12bit(imf; exposure=AutoExposure(1), quantize=false)));
         nrow=1,
         npad=5,
         fillvalue=1,
@@ -83,7 +83,7 @@ Gray.(
 )
 
 # We can, however, boost exposure 16 (=2⁴) times of the 8bit camera to see more rings:
-Gray.(PhaseRetrieval.logrescale(float.(cam8bit(imf, AutoExposure(16)))))
+Gray.(PhaseRetrieval.logrescale(float.(cam8bit(imf; exposure=AutoExposure(16)))))
 # We lost, of course, the information in the center of the PSF due to
 # the oversaturation of the camera pixels.
 
