@@ -3,7 +3,7 @@ using FFTW
 using MappedArrays
 
 export AutoExposure, FixedExposure, PSFMethods, PSFExposure
-export wavelength, airysize, diversed_psfs, throughfocus, doflength
+export wavelength, airysize, diversed_psfs, throughfocus, doflength, ab_free_psf
 using SampledDomains
 
 
@@ -92,7 +92,8 @@ struct SimConfig{PSFT<:PSFMethod}
     ap::Array{Float64,2}
     mask::Array{Float64,2}
     phases::Dict{String,Phase}
-    diversity::Dict{String,Phase} # TODO add defocus calculation from focaldistance
+    diversity::Dict{String,Phase} # TODO #11 add defocus calculation from focaldistance
+    # TODO #10 change to Named tuple
     modulation::Dict{String,Array{Float64}}
     psfmethod::PSFT
 end
@@ -170,6 +171,13 @@ function diversed_psfs(c::SimConfig{T}; kwargs...) where {T}
     )
     return [c.ims.cam(toimageplane(f, algtype(c)); kwargs...) for f in div_fields]
 end
+
+function ab_free_psf(c::SimConfig{T}; kwargs...) where {T}
+    focalfield = toimageplane(field(aperture((c))), algtype(c))
+    return ret = c.ims.cam(focalfield; kwargs...)
+    # TODO add noise
+end
+
 
 focallength(c::SimConfig) = focallength(c.ims)
 focaldistance(c::SimConfig) = focaldistance(c.ims)
