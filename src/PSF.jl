@@ -94,6 +94,8 @@ struct SimConfig{PSFT<:PSFMethod}
     phases::Dict{String,Phase}
     diversity::Dict{String,Phase} # TODO #11 add defocus calculation from focaldistance
     # TODO #10 change to Named tuple
+    diversity::Dict{String,Phase} # TODO #11 add defocus calculation from focaldistance
+    # TODO #10 change to Named tuple
     modulation::Dict{String,Array{Float64}}
     psfmethod::PSFT
 end
@@ -171,6 +173,13 @@ function diversed_psfs(c::SimConfig{T}; kwargs...) where {T}
     )
     return [c.ims.cam(toimageplane(f, algtype(c)); kwargs...) for f in div_fields]
 end
+
+function ab_free_psf(c::SimConfig{T}; kwargs...) where {T}
+    focalfield = toimageplane(field(aperture((c))), algtype(c))
+    return ret = c.ims.cam(focalfield; kwargs...)
+    # TODO add noise
+end
+
 
 function ab_free_psf(c::SimConfig{T}; kwargs...) where {T}
     focalfield = toimageplane(field(aperture((c))), algtype(c))
