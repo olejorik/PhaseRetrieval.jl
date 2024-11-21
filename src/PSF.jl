@@ -94,8 +94,6 @@ struct SimConfig{PSFT<:PSFMethod}
     phases::Dict{String,Phase}
     diversity::Dict{String,Phase} # TODO #11 add defocus calculation from focaldistance
     # TODO #10 change to Named tuple
-    diversity::Dict{String,Phase} # TODO #11 add defocus calculation from focaldistance
-    # TODO #10 change to Named tuple
     modulation::Dict{String,Array{Float64}}
     psfmethod::PSFT
 end
