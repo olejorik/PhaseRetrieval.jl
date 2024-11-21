@@ -54,6 +54,8 @@ toimageplane(field) = toimageplane(field, default_forward_method)
 (m::PSFMethod)(f::AbstractField, ::ScalarPolarization) =
     toimageplane(collect(complex_amplitude(f)), m)
 
+# TODO transform what is below to make it consistent with `modulation` field of a configuration
+
 # Linear polarization -- calculate three field components for x- and y-polarization components and sum them coherently. We assume that the poalrization modulations are given as named tuple
 function (m::PSFMethod)(f::AbstractField, p::LinearPolarization, pm)
     s, c = sincos(p.orientation_angle)

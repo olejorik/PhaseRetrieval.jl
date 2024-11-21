@@ -172,7 +172,7 @@ function tile(arr, Q::Integer)
 end
 
 function tile(arr, Q::Tuple)
-    m, n = size(arr) .÷ Q # TODO rewrite for any dimension
+    m, n = size(arr) .÷ Q # TODO #4 rewrite for any dimension
     B = reshape(arr, (Q[1], m, Q[2], n))
     C = PermutedDimsArray(B, [1, 3, 2, 4])
     return D = reshape(C, (Q[1], Q[2], :))

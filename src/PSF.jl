@@ -2,7 +2,7 @@
 using FFTW
 using MappedArrays
 
-export AutoExposure, PSFMethods, PSFExposure
+export AutoExposure, FixedExposure, PSFMethods, PSFExposure
 export wavelength, airysize, diversed_psfs, throughfocus, doflength
 using SampledDomains
 
@@ -23,7 +23,13 @@ end
 
 AutoExposure() = AutoExposure(1)
 
+struct FixedExposure <: PSFExposure
+    scale::Float64
+end
 
+
+get_max_intensity(m, exposure::AutoExposure) = m / exposure.scale
+get_max_intensity(m, exposure::FixedExposure) = exposure.scale
 
 
 
@@ -39,10 +45,12 @@ function (cam::CameraChip)(
     imf::Array{T}; exposure::PSFExposure=AutoExposure(), quantize=true, noise=(0, 0)
 ) where {T<:Real}
     # imf = intensity(field)
-    maxint = maximum(imf) / exposure.scale
+    # maxint = maximum(imf) / exposure.scale
+    maxint = get_max_intensity(maximum(imf), exposure)
     if noise != (0, 0) # TODO add docs that noise is scaled to the smallest bit
         imf = mappedarray(
-            x -> x + maxint / (2^cam.bitdepth) * (randn() * noise[1] + noise[2]), imf
+            x -> max(x + maxint / (2^cam.bitdepth) * (randn() * noise[1] + noise[2]), 0),
+            imf,
         )
     end
     storagetype = quantize ? getstoragetype(cam) : Float64
@@ -181,6 +189,7 @@ function gaussian_apodization(aplevel, conf::SimConfig)
     return qqq.vals
 end
 
+FixedExposure(conf::SimConfig) = FixedExposure(sum(conf.ap)^2)
 
 import PhaseBases: ZernikeBW, ModalPhase
 ZernikeBW(c::SimConfig{PSFMethods.Fourier}, order=10) =

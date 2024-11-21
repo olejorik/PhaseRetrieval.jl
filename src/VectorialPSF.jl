@@ -132,8 +132,8 @@ end
 function vectorial_psf(c::SimConfig{T}; kwargs...) where {T}
     # focalfield = toimageplane(pupilfield(c), algtype(c))
     # return ret = c.ims.cam(focalfield, exposure, quantize, noise)
-    # TODO add noise
-    # TODO make consistent with the scalar
+    # TODO add noise @olejorik
+    # TODO #2 make consistent with the scalar @olejorik
     haskey(c.modulation, "vectorial") ||
         error("Config named `$(c.name)` is not initialised for vectorial simulation")
     return c.ims.cam(incoherent_psf(pupilfield(c) .* c.modulation["vectorial"]); kwargs...)
@@ -156,5 +156,21 @@ function vectorial_diversed_psfs(c::SimConfig{T}; kwargs...) where {T}
         c.ims.cam(
             incoherent_psf(pupilfield(c) .* f .* c.modulation["vectorial"]); kwargs...
         ) for f in div_fields
+    ]
+end
+
+function vectorial_coherent_psf(c::SimConfig{T}) where {T}
+    haskey(c.modulation, "vectorial") ||
+        error("Config named `$(c.name)` is not initialised for vectorial simulation")
+    return toimageplane(pupilfield(c) .* c.modulation["vectorial"])
+end
+
+function vectorial_diversed_coherent_psfs(c::SimConfig{T}) where {T}
+    haskey(c.modulation, "vectorial") ||
+        error("Config named `$(c.name)` is not initialised for vectorial simulation")
+
+    div_fields = [cis.(d) for d in values(c.diversity)]
+    return [
+        toimageplane(pupilfield(c) .* f .* c.modulation["vectorial"]) for f in div_fields
     ]
 end

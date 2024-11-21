@@ -220,7 +220,7 @@ pcrop = crop(p2, cropw)
 showarray(pcrop)
 
 # Construct the corresponding sim config and see how it works
-# TODO wrap all this in functions
+# TODO #5 wrap all this in functions
 ims2crop = PhaseRetrieval.ImagingSensor(; lens=lens2, cam=PhaseRetrieval.roi(cam, cropw))
 conf2crop = SimConfig("10mm aperture", ims2crop, 633nm)
 a = sqrt.(Float64.(conf2crop.ap))
@@ -253,7 +253,7 @@ z10 = ZernikeBW(conf2crop, 10);
 # Then we know, that cropped PSFs correspond to different values of the same defocus
 ## defocus = 2π / 4 * z10(; n=2, m=0)
 defocus = ZonalPhase(throughfocus(conf2crop, doflength(conf2crop)))
-phases = [collect(k * defocus) for k in [0, 1, 2, -2, -1]] #TODO this should be automatized
+phases = [collect(k * defocus) for k in [0, 1, 2, -2, -1]] #TODO #3 this should be automatized
 # Crop the corresponding PSFs
 div_psf_crop = crop.(div_psf, cropw)
 save("psf_crop.png", Gray.(mosaicview(div_psf_crop; nrow=1, npad=5, fillvalue=1)))
