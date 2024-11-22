@@ -82,7 +82,7 @@ end
 
 
 """
-struct SimConfig{PSFT<:PSFMethod}
+mutable struct SimConfig{PSFT<:PSFMethod}
     name::String
     ims::ImagingSensor
     λ::Float64
@@ -92,8 +92,7 @@ struct SimConfig{PSFT<:PSFMethod}
     ap::Array{Float64,2}
     mask::Array{Float64,2}
     phases::Dict{String,Phase}
-    diversity::Dict{String,Phase} # TODO #11 add defocus calculation from focaldistance
-    # TODO #10 change to Named tuple
+    diversity::NamedTuple # TODO #11 add defocus calculation from focaldistance
     modulation::Dict{String,Array{Float64}}
     psfmethod::PSFT
 end
@@ -120,7 +119,7 @@ function SimConfig{PSFMethods.Fourier}(name::String, ims::ImagingSensor, λ::Flo
         ap,
         mask,
         Dict{String,Phase}(),
-        Dict{String,Phase}(),
+        (;),
         Dict{String,Array{Float64,2}}(),
         PSFMethods.Fourier(),
     )
@@ -170,7 +169,6 @@ function diversed_psfs(c::SimConfig{T}; kwargs...) where {T}
 
     return [c.ims.cam(toimageplane(f, algtype(c)); kwargs...) for f in div_fields]
 end
-# TODO #12 Change to have only the diversed values
 
 function ab_free_psf(c::SimConfig{T}; kwargs...) where {T}
     focalfield = toimageplane(field(aperture((c))), algtype(c))
