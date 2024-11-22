@@ -156,21 +156,19 @@ defocus = ZonalPhase(throughfocus(conf2, doflength(conf2)))
 showphase(collect(-(defocus .+ π / 2) .* conf2.mask))[1]
 
 # And now we add several diversities to our `conf2`
-for k in -2:2
-    conf2.diversity[string(k)] = P = k * defocus
-end;
+conf2.diversity = NamedTuple(zip(Symbol.("d=", -2:2), [k * defocus for k in -2:2]))
 
 div_psf = diversed_psfs(conf2)
 for (p, d) in zip(div_psf, collect(keys(conf2.diversity)))
     fig, ax, hm = showarray(logrescale(float(crop(p, 256))))
-    ax.title = "PSF #" * d
-    save("psf2_div_fig" * d * ".png", fig)
+    ax.title = "PSF # $d"
+    save("psf2_div_fig_$d.png", fig)
 end
-# ![](psf2_div_fig-2.png)
-# ![](psf2_div_fig-1.png)
-# ![](psf2_div_fig0.png)
-# ![](psf2_div_fig1.png)
-# ![](psf2_div_fig2.png)
+# ![](psf2_div_fig_d=-2.png)
+# ![](psf2_div_fig_d=-1.png)
+# ![](psf2_div_fig_d=0.png)
+# ![](psf2_div_fig_d=1.png)
+# ![](psf2_div_fig_d=2.png)
 
 # ## [Inverse problem](@id tutorial-inverse)
 # The goal of the inverse problem is from the given PSF and `SimConfig`
@@ -206,7 +204,7 @@ showphasetight(fftshift(angle.(sol[1])) .* conf2.mask)[1]
 # Here is an attempt with the initial guess given by the simple subset method
 th = 0.6 * maximum(A)
 xth = copy(A)
-xth[A .> th] .= 1
+xth[A .> th] .*= 1
 xth[A .<= th] .= 0
 showarray(xth)
 
@@ -235,13 +233,13 @@ showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 # You can try to change slightly the values of `β` above and see that algorithm
 # might converge to another solution. This is another problem of AP-based algorithms.
 @time sol = solve(
-    pr, (DRAPparam(; β=0.91, keephistory=true, maxit=500), APparam(; maxit=10))
+    pr, (DRAPparam(; β=0.91, keephistory=true, maxit=550), APparam(; maxit=10))
 )
 showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 
 # Douglas-Rachford is known to eventually find the solution if you run it long enough:
-# For instance, starting with `b`=0.91 would require about 20000 iterations to converge:
-sol = solve(pr, (DRAPparam(; β=0.91, keephistory=true, maxit=20000), APparam(; maxit=100)))
+# For instance, starting with `b`=0.9 would require about 20000 iterations to converge:
+sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true, maxit=20000), APparam(; maxit=100)))
 showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]
 
 # Fortunately, julia is fast, so the calculations of 20K iterations take less than a minute.
@@ -253,7 +251,7 @@ z10 = ZernikeBW(conf2crop, 10);
 # Then we know, that cropped PSFs correspond to different values of the same defocus
 ## defocus = 2π / 4 * z10(; n=2, m=0)
 defocus = ZonalPhase(throughfocus(conf2crop, doflength(conf2crop)))
-phases = [collect(k * defocus) for k in map(s -> parse(Int, s), [keys(conf2.diversity)...])] #TODO #3 this should be automatized
+phases = [collect(k * defocus) for k in -2:2] #TODO #3 this should be automatized
 # Crop the corresponding PSFs
 div_psf_crop = crop.(div_psf, cropw)
 save("psf_crop.png", Gray.(mosaicview(div_psf_crop; nrow=1, npad=5, fillvalue=1)))
@@ -269,12 +267,12 @@ pr = PDPRproblem(a, A, phases)
 
 # As expected, using phase diversities accelerates the phase retrieval a lot
 @time sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true, maxit=50), APparam(; maxit=50)))
-showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2crop.mask)[1]
+showphasetight((fftshift(angle.(sol[1][:, :, 1])) - phases[1]) .* conf2crop.mask)[1]
 
 # And now it should be also less sensitive to the parameter choice.
 # But they do affect the speed of the convergence
 sol = solve(pr, (DRAPparam(; β=0.5, keephistory=true, maxit=50), APparam(; maxit=50)))
-showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2crop.mask)[1]
+showphasetight((fftshift(angle.(sol[1][:, :, 1])) - phases[1]) .* conf2crop.mask)[1]
 
 # Try to unwrap the phase (we subtract the first diversity)
 ph = phwrap(fftshift(angle.(sol[1][:, :, 1])) - phases[1])
@@ -313,14 +311,14 @@ fig
 z10 = ZernikeBW(conf2, 10);
 defocus = 2π / 4 * z10(; n=2, m=0)
 defocus = ZonalPhase(throughfocus(conf2, doflength(conf2)))
-phases = [collect(k * defocus) for k in map(s -> parse(Int, s), [keys(conf2.diversity)...])] #TODO this should be automatized
+phases = [collect(k * defocus) for k in -2:2] #TODO this should be automatized
 
 a = sqrt.(Float64.(conf2.ap))
 A = [sqrt.(collect(Float64, p)) for p in div_psf]
 
 pr = PDPRproblem(a, A, phases)
 sol = solve(pr, (DRAPparam(; β=0.5, keephistory=true, maxit=50), APparam(; maxit=50)))
-showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2.mask)[1]
+showphasetight((fftshift(angle.(sol[1][:, :, 1])) - phases[1]) .* conf2.mask)[1]
 
 # We again unwrap the phase and subtract the first diversity
 ph = phwrap(fftshift(angle.(sol[1][:, :, 1])) - phases[1])
