@@ -312,3 +312,4 @@ myabs2(x) = abs(x)^2
 # myabs2(x) = abs2(x)
 
 field(amplitude, phase) = amplitude .* exp.(1im * collect(phase)) # use collect here for ModalPhase
+field(amplitude) = ComplexF64.(amplitude)

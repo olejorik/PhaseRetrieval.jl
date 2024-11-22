@@ -175,7 +175,6 @@ end
 function ab_free_psf(c::SimConfig{T}; kwargs...) where {T}
     focalfield = toimageplane(field(aperture((c))), algtype(c))
     return ret = c.ims.cam(focalfield; kwargs...)
-    # TODO add noise
 end
 
 
