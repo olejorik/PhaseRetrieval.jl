@@ -171,6 +171,7 @@ function diversed_psfs(c::SimConfig{T}; kwargs...) where {T}
     )
     return [c.ims.cam(toimageplane(f, algtype(c)); kwargs...) for f in div_fields]
 end
+# TODO #12 Change to have only the diversed values
 
 function ab_free_psf(c::SimConfig{T}; kwargs...) where {T}
     focalfield = toimageplane(field(aperture((c))), algtype(c))
