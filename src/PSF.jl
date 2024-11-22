@@ -166,9 +166,8 @@ function psf(c::SimConfig{T}; kwargs...) where {T}
 end
 
 function diversed_psfs(c::SimConfig{T}; kwargs...) where {T}
-    div_fields = vcat(
-        [pupilfield(c)], [field(pupilfield(c), collect(d)) for d in values(c.diversity)]
-    )
+    div_fields = [field(pupilfield(c), collect(d)) for d in values(c.diversity)]
+
     return [c.ims.cam(toimageplane(f, algtype(c)); kwargs...) for f in div_fields]
 end
 # TODO #12 Change to have only the diversed values
