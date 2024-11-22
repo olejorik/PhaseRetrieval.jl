@@ -22,7 +22,7 @@ Imaging Sensor made with:
 	(1280, 1024) frame and 
 	8/8 bit/channel output.
 with wavefront aberrrations: String[]
-with phase diversities String[]
+with phase diversities ()
 </code></pre><p>This creates a simulation configuration for the generation of a PSF using <a href="@ref"><code>PSFMethods.Fourier</code></a> methods. If we check near the central pixel, we&#39;ll see that for this configuration the PSF is almost one pixel wide. To crop central part of the image, we&#39;ll use <code>crop</code> function from <code>PhaseUtils</code> package.</p><pre><code class="language-julia hljs">p = psf(conf1)
 using PhaseUtils
 heatmap(rotr90(crop(p, 9)); axis=(aspect=DataAspect(),)) # show central 9 pixels</code></pre><img src="9c6a9a8d.png" alt="Example block output"/><p>Indeed, the Airy pattern should be about 9 microns wide</p><pre><code class="language-julia hljs">print(&quot;Airy size is 1.22λ/NA = $(airysize(conf1)/ um) μm&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Airy size is 1.22λ/NA = 9.267119999999998 μm</code></pre><p>We might thus want to consider a smaller numerical aperture:</p><pre><code class="language-julia hljs">lens2 = PhaseRetrieval.diaphragm(lens, 10mm)
@@ -62,21 +62,19 @@ Imaging Sensor made with:
 	(1280, 1024) frame and 
 	8/8 bit/channel output.
 with wavefront aberrrations: [&quot;aberration&quot;]
-with phase diversities String[]
+with phase diversities ()
 </code></pre><p>and check the PSF</p><pre><code class="language-julia hljs">p2 = psf(conf2)
 save(&quot;psf2_ab.png&quot;, Gray.(p2));</code></pre><p><img src="../psf2_ab.png" alt/></p><p>For this aberrated phase the PSF is larger and more details are visible in the logarithmic scale</p><pre><code class="language-julia hljs">showarray(logrescale(float(p2)))</code></pre><img src="0cdbe250.png" alt="Example block output"/><p>The <code>SimConfig</code>type is callable and, if applied to an array of proper dimensions, generates a PSF:</p><pre><code class="language-julia hljs">p2 = conf2(phase)
 showarray(p2; colormap=:grays)</code></pre><img src="5e4def5d.png" alt="Example block output"/><h3 id="Adding-some-diversity"><a class="docs-heading-anchor" href="#Adding-some-diversity">Adding some diversity</a><a id="Adding-some-diversity-1"></a><a class="docs-heading-anchor-permalink" href="#Adding-some-diversity" title="Permalink"></a></h3><p>This creates a defocus of 1λ/4 amplitude:</p><pre><code class="language-julia hljs">defocus = 2π / 4 * z10(; n=2, m=0)
 showphase(collect(defocus .* conf2.mask))[1]</code></pre><img src="064dc493.png" alt="Example block output"/><p>Or we could better create diversities corresponding in the depth-of-focus lengths, which is approximately the same</p><pre><code class="language-julia hljs">defocus = ZonalPhase(throughfocus(conf2, doflength(conf2)))
-showphase(collect(-(defocus .+ π / 2) .* conf2.mask))[1]</code></pre><img src="d0b556c0.png" alt="Example block output"/><p>And now we add several diversities to our <code>conf2</code></p><pre><code class="language-julia hljs">for k in -2:2
-    conf2.diversity[string(k)] = P = k * defocus
-end;
+showphase(collect(-(defocus .+ π / 2) .* conf2.mask))[1]</code></pre><img src="d0b556c0.png" alt="Example block output"/><p>And now we add several diversities to our <code>conf2</code></p><pre><code class="language-julia hljs">conf2.diversity = NamedTuple(zip(Symbol.(&quot;d=&quot;, -2:2), [k * defocus for k in -2:2]))
 
 div_psf = diversed_psfs(conf2)
 for (p, d) in zip(div_psf, collect(keys(conf2.diversity)))
     fig, ax, hm = showarray(logrescale(float(crop(p, 256))))
-    ax.title = &quot;PSF #&quot; * d
-    save(&quot;psf2_div_fig&quot; * d * &quot;.png&quot;, fig)
-end</code></pre><p><img src="../psf2_div_fig-2.png" alt/> <img src="../psf2_div_fig-1.png" alt/> <img src="../psf2_div_fig0.png" alt/> <img src="../psf2_div_fig1.png" alt/> <img src="../psf2_div_fig2.png" alt/></p><h2 id="tutorial-inverse"><a class="docs-heading-anchor" href="#tutorial-inverse">Inverse problem</a><a id="tutorial-inverse-1"></a><a class="docs-heading-anchor-permalink" href="#tutorial-inverse" title="Permalink"></a></h2><p>The goal of the inverse problem is from the given PSF and <code>SimConfig</code> to restore the unknown phase.</p><p>In mathematics, the (2D) phase retrieval (PR) problem can be described as</p><p class="math-container">\[\text{find }x \mathbb{C}^{M \times N} \text{s.t.}\\
+    ax.title = &quot;PSF # $d&quot;
+    save(&quot;psf2_div_fig_$d.png&quot;, fig)
+end</code></pre><p><img src="../psf2_div_fig_d=-2.png" alt/> <img src="../psf2_div_fig_d=-1.png" alt/> <img src="../psf2_div_fig_d=0.png" alt/> <img src="../psf2_div_fig_d=1.png" alt/> <img src="../psf2_div_fig_d=2.png" alt/></p><h2 id="tutorial-inverse"><a class="docs-heading-anchor" href="#tutorial-inverse">Inverse problem</a><a id="tutorial-inverse-1"></a><a class="docs-heading-anchor-permalink" href="#tutorial-inverse" title="Permalink"></a></h2><p>The goal of the inverse problem is from the given PSF and <code>SimConfig</code> to restore the unknown phase.</p><p>In mathematics, the (2D) phase retrieval (PR) problem can be described as</p><p class="math-container">\[\text{find }x \mathbb{C}^{M \times N} \text{s.t.}\\
 \abs{x} = a, \abs{\F x} = A\]</p><p>for some real arrays <span>$a$</span> and <span>$A.$</span></p><p>As for the PSF <span>$p$</span> one has <span>$p = \abs{\F (a e^{i \phi})}$</span>, we can from the PRproblem by passing to <code>PRproblem</code> object two arrays corresponding to the square root of the intensities in the pupil and focal planes. This PR problem we try to solve using successive applications of the DRAP algorithm with β = 0.9 and Alternating projections algorithm with the default number of iterations.</p><pre><code class="language-julia hljs">using FFTW
 a = sqrt.(Float64.(conf2.ap))
 A = sqrt.(collect(Float64, p2))
@@ -85,13 +83,13 @@ sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true), APparam(; maxϵ=0.001)))
 showphasetight(fftshift(angle.(sol[1])) .* conf2.mask)[1]</code></pre><img src="aa097a44.png" alt="Example block output"/><p>This doesn&#39;t work at the moment.  It might work if we let it iterate further</p><pre><code class="language-julia hljs">sol = solve(pr, (DRAPparam(β = 0.9,keephistory = true, maxit =1500), APparam(maxϵ = 0.001)))
 showphasetight(fftshift(angle.(sol[1])) .* conf2.mask)[1]</code></pre><p><img src="../../assets/PR_DRAP1500.png" alt="Output after 1500 iterations"/></p><p>The phase is perfectly reconstructed now, and so here is the main problem of the AP-based PR algorithms –- they require quite a long time to converge, even for the noiseless data.</p><p>Here is an attempt with the initial guess given by the simple subset method</p><pre><code class="language-julia hljs">th = 0.6 * maximum(A)
 xth = copy(A)
-xth[A .&gt; th] .= 1
+xth[A .&gt; th] .*= 1
 xth[A .&lt;= th] .= 0
 showarray(xth)
 
 alg = DRAPparam(; x⁰=ifft(xth), β=0.95, keephistory=true, maxit=200)
 sol = solve(pr, (alg, APparam(; maxit=50)))
-showphasetight(fftshift(angle.(sol[1])) .* conf2.mask)[1]</code></pre><img src="10b81af2.png" alt="Example block output"/><p>Let&#39;s try to have a smaller crop</p><pre><code class="language-julia hljs">cropw = 128
+showphasetight(fftshift(angle.(sol[1])) .* conf2.mask)[1]</code></pre><img src="b2140015.png" alt="Example block output"/><p>Let&#39;s try to have a smaller crop</p><pre><code class="language-julia hljs">cropw = 128
 pcrop = crop(p2, cropw)
 showarray(pcrop)</code></pre><img src="1e9691d7.png" alt="Example block output"/><p>Construct the corresponding sim config and see how it works TODO #5 wrap all this in functions</p><pre><code class="language-julia hljs">ims2crop = PhaseRetrieval.ImagingSensor(; lens=lens2, cam=PhaseRetrieval.roi(cam, cropw))
 conf2crop = SimConfig(&quot;10mm aperture&quot;, ims2crop, 633nm)
@@ -101,46 +99,46 @@ pr = PRproblem(a, A)
 @time sol = solve(
     pr, (DRAPparam(; β=0.9, keephistory=true, maxit=550), APparam(; maxit=10))
 )</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(ComplexF64[-0.5254181326402 + 0.8508441607561782im -0.8416163641351645 + 0.540075823954291im … -0.30164837657132393 + 0.9534192450920449im -0.06555882263171758 + 0.9978487063553989im; -0.8046182957052656 + 0.59379238645873im -0.954460598978909 + 0.2983369990410547im … -0.5672195381567174 + 0.8235666309007913im -0.5515556641980554 + 0.8341380876635727im; … ; -0.8052843318710963 + 0.5928888132212667im -0.7052486378060739 + 0.708960054497203im … -0.3191200660179792 + 0.9477142942177671im -0.35921977914798475 + 0.933252993710105im; -0.780491784958076 + 0.6251660368357805im -0.8902356235122956 + 0.4555003124364181im … -0.31425562328294177 + 0.9493384029075459im -0.1809547766354053 + 0.9834914177626721im], (lasty = ComplexF64[-0.5151363191878082 + 0.834194143570832im -0.9163068406576629 + 0.5880056437254149im … -0.27171275046340737 + 0.8588017889347133im -0.0686179893547525 + 1.044411250259734im; -0.8362493188717159 + 0.6171354558773479im -1.0130936067945244 + 0.31666399505867443im … -0.4869915557670689 + 0.7070807119295808im -0.4833889390470828 + 0.7310470209760536im; … ; -0.7247703178853209 + 0.5336105480043197im -0.6528235601573348 + 0.656259086477623im … -0.3321584000085719 + 0.9864351921226137im -0.3349544465211505 + 0.8702116590400688im; -0.6926785532669021 + 0.5548285251590085im -0.8476797821829456 + 0.43372607816680303im … -0.3268766130655991 + 0.9874652951432743im -0.18364476118385759 + 0.9981115165879573im], errhist = [1.1308558115531286, 1.6552320009470451, 0.9164379238270828, 0.7782890566852074, 0.7344615008703511, 0.6979312917404664, 0.6658312191766171, 0.6589608570730494, 0.663124198967275, 0.6282612603620824  …  0.3942958448664712, 0.38966208886858383, 0.3896365768427384, 0.3874786768048714, 0.3828253127465287, 0.3663423640663958, 0.3801632628244451, 0.38152569272215364, 0.3844313102124404, 0.3919284886238158], xhist = Matrix{ComplexF64}[], disthist = [1.1653506346855973, 0.9236646144982529, 0.8751176323179448, 0.8829744652049729, 0.9050513910527188, 0.9099235442844693, 0.9060836428783742, 0.9113413589169346, 0.9141784823457312, 0.8814625929026159  …  0.6568570381572684, 0.6558397685739191, 0.6535649951648127, 0.651611984701357, 0.6482438332604232, 0.6413256578129513, 0.6473604854857432, 0.6499570681255383, 0.6538915741909639, 0.6562494368222863], distgthist = Float64[], k = 560))</code></pre><p>sol = solve(pr, (DRAPparam(β = 0.9,keephistory = true), APparam(maxϵ = 0.001)))</p><pre><code class="language-julia hljs">showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]</code></pre><img src="014047fd.png" alt="Example block output"/><p>You can try to change slightly the values of <code>β</code> above and see that algorithm might converge to another solution. This is another problem of AP-based algorithms.</p><pre><code class="language-julia hljs">@time sol = solve(
-    pr, (DRAPparam(; β=0.91, keephistory=true, maxit=500), APparam(; maxit=10))
+    pr, (DRAPparam(; β=0.91, keephistory=true, maxit=550), APparam(; maxit=10))
 )
-showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]</code></pre><img src="24db57b6.png" alt="Example block output"/><p>Douglas-Rachford is known to eventually find the solution if you run it long enough: For instance, starting with <code>b</code>=0.91 would require about 20000 iterations to converge:</p><pre><code class="language-julia hljs">sol = solve(pr, (DRAPparam(; β=0.91, keephistory=true, maxit=20000), APparam(; maxit=100)))
-showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]</code></pre><img src="7d87f5c3.png" alt="Example block output"/><p>Fortunately, julia is fast, so the calculations of 20K iterations take less than a minute.</p><h2 id="Using-phase-diversity"><a class="docs-heading-anchor" href="#Using-phase-diversity">Using phase diversity</a><a id="Using-phase-diversity-1"></a><a class="docs-heading-anchor-permalink" href="#Using-phase-diversity" title="Permalink"></a></h2><p>To use phase-diverse Phase Retrieval, we need to construct the phase diversities for the cropped configuration</p><pre><code class="language-julia hljs">z10 = ZernikeBW(conf2crop, 10);</code></pre><p>Then we know, that cropped PSFs correspond to different values of the same defocus</p><pre><code class="language-julia hljs"># defocus = 2π / 4 * z10(; n=2, m=0)
+showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]</code></pre><img src="d683e311.png" alt="Example block output"/><p>Douglas-Rachford is known to eventually find the solution if you run it long enough: For instance, starting with <code>b</code>=0.9 would require about 20000 iterations to converge:</p><pre><code class="language-julia hljs">sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true, maxit=20000), APparam(; maxit=100)))
+showphasetight(fftshift(angle.(sol[1])) .* conf2crop.mask)[1]</code></pre><img src="48257cc8.png" alt="Example block output"/><p>Fortunately, julia is fast, so the calculations of 20K iterations take less than a minute.</p><h2 id="Using-phase-diversity"><a class="docs-heading-anchor" href="#Using-phase-diversity">Using phase diversity</a><a id="Using-phase-diversity-1"></a><a class="docs-heading-anchor-permalink" href="#Using-phase-diversity" title="Permalink"></a></h2><p>To use phase-diverse Phase Retrieval, we need to construct the phase diversities for the cropped configuration</p><pre><code class="language-julia hljs">z10 = ZernikeBW(conf2crop, 10);</code></pre><p>Then we know, that cropped PSFs correspond to different values of the same defocus</p><pre><code class="language-julia hljs"># defocus = 2π / 4 * z10(; n=2, m=0)
 defocus = ZonalPhase(throughfocus(conf2crop, doflength(conf2crop)))
-phases = [collect(k * defocus) for k in map(s -&gt; parse(Int, s), [keys(conf2.diversity)...])] #TODO #3 this should be automatized</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{Matrix{Float64}}:
- [-80.80802838513034 -79.55305637468317 … -78.31791593137736 -79.55305637468317; -79.55305637468317 -78.29815423438491 … -77.06308254951097 -78.29815423438491; … ; -78.31791593137736 -77.06308254951097 … -75.82807852904871 -77.06308254951097; -79.55305637468317 -78.29815423438491 … -77.06308254951097 -78.29815423438491]
- [-0.0 -0.0 … -0.0 -0.0; -0.0 -0.0 … -0.0 -0.0; … ; -0.0 -0.0 … -0.0 -0.0; -0.0 -0.0 … -0.0 -0.0]
- [-161.61605677026068 -159.10611274936633 … -156.6358318627547 -159.10611274936633; -159.10611274936633 -156.59630846876982 … -154.12616509902193 -156.59630846876982; … ; -156.6358318627547 -154.12616509902193 … -151.65615705809742 -154.12616509902193; -159.10611274936633 -156.59630846876982 … -154.12616509902193 -156.59630846876982]
+phases = [collect(k * defocus) for k in -2:2] #TODO #3 this should be automatized</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{Matrix{Float64}}:
  [161.61605677026068 159.10611274936633 … 156.6358318627547 159.10611274936633; 159.10611274936633 156.59630846876982 … 154.12616509902193 156.59630846876982; … ; 156.6358318627547 154.12616509902193 … 151.65615705809742 154.12616509902193; 159.10611274936633 156.59630846876982 … 154.12616509902193 156.59630846876982]
- [80.80802838513034 79.55305637468317 … 78.31791593137736 79.55305637468317; 79.55305637468317 78.29815423438491 … 77.06308254951097 78.29815423438491; … ; 78.31791593137736 77.06308254951097 … 75.82807852904871 77.06308254951097; 79.55305637468317 78.29815423438491 … 77.06308254951097 78.29815423438491]</code></pre><p>Crop the corresponding PSFs</p><pre><code class="language-julia hljs">div_psf_crop = crop.(div_psf, cropw)
+ [80.80802838513034 79.55305637468317 … 78.31791593137736 79.55305637468317; 79.55305637468317 78.29815423438491 … 77.06308254951097 78.29815423438491; … ; 78.31791593137736 77.06308254951097 … 75.82807852904871 77.06308254951097; 79.55305637468317 78.29815423438491 … 77.06308254951097 78.29815423438491]
+ [-0.0 -0.0 … -0.0 -0.0; -0.0 -0.0 … -0.0 -0.0; … ; -0.0 -0.0 … -0.0 -0.0; -0.0 -0.0 … -0.0 -0.0]
+ [-80.80802838513034 -79.55305637468317 … -78.31791593137736 -79.55305637468317; -79.55305637468317 -78.29815423438491 … -77.06308254951097 -78.29815423438491; … ; -78.31791593137736 -77.06308254951097 … -75.82807852904871 -77.06308254951097; -79.55305637468317 -78.29815423438491 … -77.06308254951097 -78.29815423438491]
+ [-161.61605677026068 -159.10611274936633 … -156.6358318627547 -159.10611274936633; -159.10611274936633 -156.59630846876982 … -154.12616509902193 -156.59630846876982; … ; -156.6358318627547 -154.12616509902193 … -151.65615705809742 -154.12616509902193; -159.10611274936633 -156.59630846876982 … -154.12616509902193 -156.59630846876982]</code></pre><p>Crop the corresponding PSFs</p><pre><code class="language-julia hljs">div_psf_crop = crop.(div_psf, cropw)
 save(&quot;psf_crop.png&quot;, Gray.(mosaicview(div_psf_crop; nrow=1, npad=5, fillvalue=1)))</code></pre><p><img src="../psf_crop.png" alt/></p><p>Now the set corresponding to the pupil phase will be phase-diversed set</p><pre><code class="language-julia hljs">a = sqrt.(Float64.(conf2crop.ap))
 A = [sqrt.(collect(Float64, p)) for p in div_psf_crop]
-pr = PDPRproblem(a, A, phases)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">PDPRproblem{Float64, 2}([1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0; … ; 1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0], [[85.41074134209971 80.38209410324788 … 86.01865464612906 87.81714854570771; 84.1817457383793 76.39368945983463 … 90.1593501573227 89.57954124836634; … ; 79.73121623241703 82.30384975195432 … 69.23766087943807 75.70853042268547; 82.93453981614192 82.30384975195432 … 78.41325411468729 82.30384975195432], [64.08098129291571 69.33584998981664 … 65.62532286172093 62.49849059154081; 64.08098129291571 72.16704073394276 … 60.874875679370525 60.04660748416822; … ; 67.87598438747138 65.62532286172093 … 79.43419523810947 73.54177456069884; 64.85774882066184 67.13414807642388 … 72.85765016053978 67.87598438747138], [66.42747143127828 83.27124230771065 … 67.99068463384995 59.76714829944543; 71.0139540473021 88.17367373754396 … 59.76714829944543 58.88166011361033; … ; 64.0111131477478 69.51875598143272 … 89.35726594184267 73.91366681395958; 63.18512869576668 76.70383702486939 … 78.7316008263343 65.63190415217373], [78.75248931664578 83.07933107114764 … 75.51024398495697 76.16973461978101; 76.16973461978101 83.07933107114764 … 69.29295215421631 71.42554021067616; … ; 80.01260915836129 75.51024398495697 … 88.33152879720004 84.86618777445918; 80.01260915836129 80.63528476857272 … 82.47510973529663 81.25318870720676], [78.26534091594331 73.99860274404051 … 82.31120196733457 81.74548253532589; 79.44232938073365 72.73357614831113 … 85.62706520459395 84.53623002478663; … ; 73.99860274404051 77.67015858304113 … 66.74490699638073 70.13510449001897; 76.46589714092559 75.85659741375524 … 75.24236384390423 76.46589714092559]], [[0.0 -0.00984664338631652 … -0.039386599270668 -0.00984664338631652; -0.00984664338631652 -0.019693291061874205 … -0.049233259801392856 -0.019693291061874205; … ; -0.039386599270668 -0.049233259801392856 … -0.0787732671214806 -0.049233259801392856; -0.00984664338631652 -0.019693291061874205 … -0.049233259801392856 -0.019693291061874205], [0.0 -0.0 … -0.0 -0.0; -0.0 -0.0 … -0.0 -0.0; … ; -0.0 -0.0 … -0.0 -0.0; -0.0 -0.0 … -0.0 -0.0], [0.0 -0.01969328677263304 … -0.078773198541336 -0.01969328677263304; -0.01969328677263304 -0.03938658212374841 … -0.09846651960278571 -0.03938658212374841; … ; -0.078773198541336 -0.09846651960278571 … -0.1575465342429612 -0.09846651960278571; -0.01969328677263304 -0.03938658212374841 … -0.09846651960278571 -0.03938658212374841], [-0.0 0.01969328677263304 … 0.078773198541336 0.01969328677263304; 0.01969328677263304 0.03938658212374841 … 0.09846651960278571 0.03938658212374841; … ; 0.078773198541336 0.09846651960278571 … 0.1575465342429612 0.09846651960278571; 0.01969328677263304 0.03938658212374841 … 0.09846651960278571 0.03938658212374841], [-0.0 0.00984664338631652 … 0.039386599270668 0.00984664338631652; 0.00984664338631652 0.019693291061874205 … 0.049233259801392856 0.019693291061874205; … ; 0.039386599270668 0.049233259801392856 … 0.0787732671214806 0.049233259801392856; 0.00984664338631652 0.019693291061874205 … 0.049233259801392856 0.019693291061874205]])</code></pre><p>As expected, using phase diversities accelerates the phase retrieval a lot</p><pre><code class="language-julia hljs">@time sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true, maxit=50), APparam(; maxit=50)))
-showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2crop.mask)[1]</code></pre><img src="bbddfb4e.png" alt="Example block output"/><p>And now it should be also less sensitive to the parameter choice. But they do affect the speed of the convergence</p><pre><code class="language-julia hljs">sol = solve(pr, (DRAPparam(; β=0.5, keephistory=true, maxit=50), APparam(; maxit=50)))
-showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2crop.mask)[1]</code></pre><img src="da68e7b9.png" alt="Example block output"/><p>Try to unwrap the phase (we subtract the first diversity)</p><pre><code class="language-julia hljs">ph = phwrap(fftshift(angle.(sol[1][:, :, 1])) - phases[1])
+pr = PDPRproblem(a, A, phases)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">PDPRproblem{Float64, 2}([1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0; … ; 1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0], [[78.75248931664578 83.07933107114764 … 75.51024398495697 76.16973461978101; 76.16973461978101 83.07933107114764 … 69.29295215421631 71.42554021067616; … ; 80.01260915836129 75.51024398495697 … 88.33152879720004 84.86618777445918; 80.01260915836129 80.63528476857272 … 82.47510973529663 81.25318870720676], [78.26534091594331 73.99860274404051 … 82.31120196733457 81.74548253532589; 79.44232938073365 72.73357614831113 … 85.62706520459395 84.53623002478663; … ; 73.99860274404051 77.67015858304113 … 66.74490699638073 70.13510449001897; 76.46589714092559 75.85659741375524 … 75.24236384390423 76.46589714092559], [64.08098129291571 69.33584998981664 … 65.62532286172093 62.49849059154081; 64.08098129291571 72.16704073394276 … 60.874875679370525 60.04660748416822; … ; 67.87598438747138 65.62532286172093 … 79.43419523810947 73.54177456069884; 64.85774882066184 67.13414807642388 … 72.85765016053978 67.87598438747138], [85.41074134209971 80.38209410324788 … 86.01865464612906 87.81714854570771; 84.1817457383793 76.39368945983463 … 90.1593501573227 89.57954124836634; … ; 79.73121623241703 82.30384975195432 … 69.23766087943807 75.70853042268547; 82.93453981614192 82.30384975195432 … 78.41325411468729 82.30384975195432], [66.42747143127828 83.27124230771065 … 67.99068463384995 59.76714829944543; 71.0139540473021 88.17367373754396 … 59.76714829944543 58.88166011361033; … ; 64.0111131477478 69.51875598143272 … 89.35726594184267 73.91366681395958; 63.18512869576668 76.70383702486939 … 78.7316008263343 65.63190415217373]], [[-0.0 0.01969328677263304 … 0.078773198541336 0.01969328677263304; 0.01969328677263304 0.03938658212374841 … 0.09846651960278571 0.03938658212374841; … ; 0.078773198541336 0.09846651960278571 … 0.1575465342429612 0.09846651960278571; 0.01969328677263304 0.03938658212374841 … 0.09846651960278571 0.03938658212374841], [-0.0 0.00984664338631652 … 0.039386599270668 0.00984664338631652; 0.00984664338631652 0.019693291061874205 … 0.049233259801392856 0.019693291061874205; … ; 0.039386599270668 0.049233259801392856 … 0.0787732671214806 0.049233259801392856; 0.00984664338631652 0.019693291061874205 … 0.049233259801392856 0.019693291061874205], [0.0 -0.0 … -0.0 -0.0; -0.0 -0.0 … -0.0 -0.0; … ; -0.0 -0.0 … -0.0 -0.0; -0.0 -0.0 … -0.0 -0.0], [0.0 -0.00984664338631652 … -0.039386599270668 -0.00984664338631652; -0.00984664338631652 -0.019693291061874205 … -0.049233259801392856 -0.019693291061874205; … ; -0.039386599270668 -0.049233259801392856 … -0.0787732671214806 -0.049233259801392856; -0.00984664338631652 -0.019693291061874205 … -0.049233259801392856 -0.019693291061874205], [0.0 -0.01969328677263304 … -0.078773198541336 -0.01969328677263304; -0.01969328677263304 -0.03938658212374841 … -0.09846651960278571 -0.03938658212374841; … ; -0.078773198541336 -0.09846651960278571 … -0.1575465342429612 -0.09846651960278571; -0.01969328677263304 -0.03938658212374841 … -0.09846651960278571 -0.03938658212374841]])</code></pre><p>As expected, using phase diversities accelerates the phase retrieval a lot</p><pre><code class="language-julia hljs">@time sol = solve(pr, (DRAPparam(; β=0.9, keephistory=true, maxit=50), APparam(; maxit=50)))
+showphasetight((fftshift(angle.(sol[1][:, :, 1])) - phases[1]) .* conf2crop.mask)[1]</code></pre><img src="641db960.png" alt="Example block output"/><p>And now it should be also less sensitive to the parameter choice. But they do affect the speed of the convergence</p><pre><code class="language-julia hljs">sol = solve(pr, (DRAPparam(; β=0.5, keephistory=true, maxit=50), APparam(; maxit=50)))
+showphasetight((fftshift(angle.(sol[1][:, :, 1])) - phases[1]) .* conf2crop.mask)[1]</code></pre><img src="54128199.png" alt="Example block output"/><p>Try to unwrap the phase (we subtract the first diversity)</p><pre><code class="language-julia hljs">ph = phwrap(fftshift(angle.(sol[1][:, :, 1])) - phases[1])
 ph_u = unwrap_LS(ph, conf2crop.ap)
 fig, ax, hm = showarray(bboxview(ph_u .* conf2crop.mask))
 Colorbar(fig[1, 2], hm)
 fig</code></pre><img src="571dde6c.png" alt="Example block output"/><p>Now the phase is unwrapped and can be decomposed by the basis functions</p><pre><code class="language-julia hljs">restored_coef = PhaseBases.decompose(ph_u, z10)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">66-element Vector{Float64}:
-  0.1437836496033211
- -0.03240287356648519
-  0.0002806713708267683
- 12.554664091296694
-  0.016700098412666536
-  6.307852723085046
-  0.00812566921781599
-  0.025339875807476542
- -0.008858199228637759
-  0.023490944449025886
+  0.14378364960331558
+ -0.03240287356609972
+  0.00028067137090359573
+ 12.554664091296742
+  0.016700098412679415
+  6.307852723085032
+  0.00812566921782576
+  0.02533987580733732
+ -0.008858199228636843
+  0.02349094444912314
   ⋮
- -0.0026324885835861955
-  0.007321395981697704
- -0.11373295545177786
- -0.0007844341832537599
- -0.054999586427139924
- -0.04977835142757417
-  0.006966824430845842
-  0.011948998768339492
- -0.010085436100992717</code></pre><p>and compare the restored coefficients with the original ones</p><pre><code class="language-julia hljs">fig = Figure();
+ -0.0026324885835802003
+  0.007321395981692513
+ -0.11373295545177792
+ -0.0007844341832551754
+ -0.05499958642714298
+ -0.049778351427570644
+  0.0069668244308478955
+  0.011948998768339991
+ -0.010085436100999323</code></pre><p>and compare the restored coefficients with the original ones</p><pre><code class="language-julia hljs">fig = Figure();
 ax = Axis(fig[1, 1]);
 scatter!(phase.coef; label=&quot;original&quot;)
 scatter!(restored_coef; label=&quot;restored&quot;)
@@ -160,39 +158,39 @@ ax.title = &quot;Phase restoration error, rms = $(round(maskedrmse(err, z10.ap),
 fig</code></pre><img src="36dc669e.png" alt="Example block output"/><p>Try with high-res phase</p><pre><code class="language-julia hljs">z10 = ZernikeBW(conf2, 10);
 defocus = 2π / 4 * z10(; n=2, m=0)
 defocus = ZonalPhase(throughfocus(conf2, doflength(conf2)))
-phases = [collect(k * defocus) for k in map(s -&gt; parse(Int, s), [keys(conf2.diversity)...])] #TODO this should be automatized
+phases = [collect(k * defocus) for k in -2:2] #TODO this should be automatized
 
 a = sqrt.(Float64.(conf2.ap))
 A = [sqrt.(collect(Float64, p)) for p in div_psf]
 
 pr = PDPRproblem(a, A, phases)
 sol = solve(pr, (DRAPparam(; β=0.5, keephistory=true, maxit=50), APparam(; maxit=50)))
-showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2.mask)[1]</code></pre><img src="218e8388.png" alt="Example block output"/><p>We again unwrap the phase and subtract the first diversity</p><pre><code class="language-julia hljs">ph = phwrap(fftshift(angle.(sol[1][:, :, 1])) - phases[1])
+showphasetight((fftshift(angle.(sol[1][:, :, 1])) - phases[1]) .* conf2.mask)[1]</code></pre><img src="6c701485.png" alt="Example block output"/><p>We again unwrap the phase and subtract the first diversity</p><pre><code class="language-julia hljs">ph = phwrap(fftshift(angle.(sol[1][:, :, 1])) - phases[1])
 ph_u = unwrap_LS(ph, conf2.ap)
 fig, ax, hm = showarray(bboxview(ph_u .* conf2.mask))
 ax.aspect = 1
 Colorbar(fig[1, 2], hm)
 fig</code></pre><img src="cc981cd8.png" alt="Example block output"/><p>Now the phase is unwrapped and can be decomposed by the basis functions</p><pre><code class="language-julia hljs">restored_coef = PhaseBases.decompose(ph_u, z10)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">66-element Vector{Float64}:
-  0.3542642352707136
- -0.032831311289744924
- -0.002287798644536876
- 12.51926046966647
-  0.0017603526468037518
-  6.267625071202252
-  0.0017588848265988055
-  0.018198410844923574
- -0.011167707291839468
- -0.0011324700697130652
+  0.3542642352707474
+ -0.03283131129023875
+ -0.0022877986438492037
+ 12.519260469666449
+  0.0017603526467579404
+  6.267625071202241
+  0.0017588848261818057
+  0.01819841084507523
+ -0.011167707291945578
+ -0.0011324700696682122
   ⋮
-  0.004547659274211677
-  0.002577014794662583
- -0.09339208953672495
- -0.0028212637216741714
- -0.04608428343840554
- -0.05270095792598024
-  0.012497655230982561
-  0.00610103011129599
- -0.0009468167109216163</code></pre><p>and compare the restored coefficients with the original ones</p><pre><code class="language-julia hljs">fig = Figure();
+  0.004547659274192421
+  0.002577014794666266
+ -0.09339208953671385
+ -0.002821263721670113
+ -0.04608428343840027
+ -0.052700957925998514
+  0.012497655230986334
+  0.006101030111302148
+ -0.0009468167108972192</code></pre><p>and compare the restored coefficients with the original ones</p><pre><code class="language-julia hljs">fig = Figure();
 ax = Axis(fig[1, 1]);
 scatter!(phase.coef; label=&quot;original&quot;)
 scatter!(restored_coef; label=&quot;restored&quot;)
@@ -209,7 +207,7 @@ fig, ax, hm = showarray(bboxview(err .* conf2.mask));
 ax.aspect = 1
 Colorbar(fig[1, 2], hm)
 ax.title = &quot;Phase rmse = $(PhaseUtils.maskedphasermse(ph_u, phase, conf2.ap)/(2π)) λ&quot;
-fig</code></pre><img src="7c038dd5.png" alt="Example block output"/><p>The quite big error in the coefficient restoration compared with the error magnitude in the phases <em>is not</em> the numerical error of decomposition by Zernikes. Here is, for instance, the result of the decomposition of the input phase:</p><pre><code class="language-julia hljs">rest = PhaseBases.decompose(collect(phase), z10)
+fig</code></pre><img src="127d1838.png" alt="Example block output"/><p>The quite big error in the coefficient restoration compared with the error magnitude in the phases <em>is not</em> the numerical error of decomposition by Zernikes. Here is, for instance, the result of the decomposition of the input phase:</p><pre><code class="language-julia hljs">rest = PhaseBases.decompose(collect(phase), z10)
 scatter(phase.coef)
 scatter!(rest)
-current_figure()</code></pre><img src="c17274c0.png" alt="Example block output"/><p>The error is negligible:</p><pre><code class="language-julia hljs">scatter(rest .- phase.coef; axis=(title=&quot;RMS error = $( norm(rest .- phase.coef))&quot;,))</code></pre><img src="d51c7001.png" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../about/">« About</a><a class="docs-footer-nextpage" href="../Hardware/">Forward model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Friday 22 November 2024 14:47">Friday 22 November 2024</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+current_figure()</code></pre><img src="c17274c0.png" alt="Example block output"/><p>The error is negligible:</p><pre><code class="language-julia hljs">scatter(rest .- phase.coef; axis=(title=&quot;RMS error = $( norm(rest .- phase.coef))&quot;,))</code></pre><img src="d51c7001.png" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../about/">« About</a><a class="docs-footer-nextpage" href="../Hardware/">Forward model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Friday 22 November 2024 16:47">Friday 22 November 2024</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
