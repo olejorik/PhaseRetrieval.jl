@@ -156,12 +156,12 @@ defocus = ZonalPhase(throughfocus(conf2, doflength(conf2)))
 showphase(collect(-(defocus .+ π / 2) .* conf2.mask))[1]
 
 # And now we add several diversities to our `conf2`
-for k in [-2, -1, 1, 2]
+for k in -2:2
     conf2.diversity[string(k)] = P = k * defocus
 end;
 
 div_psf = diversed_psfs(conf2)
-for (p, d) in zip(div_psf, vcat(["0"], collect(keys(conf2.diversity))))
+for (p, d) in zip(div_psf, collect(keys(conf2.diversity)))
     fig, ax, hm = showarray(logrescale(float(crop(p, 256))))
     ax.title = "PSF #" * d
     save("psf2_div_fig" * d * ".png", fig)
@@ -253,7 +253,7 @@ z10 = ZernikeBW(conf2crop, 10);
 # Then we know, that cropped PSFs correspond to different values of the same defocus
 ## defocus = 2π / 4 * z10(; n=2, m=0)
 defocus = ZonalPhase(throughfocus(conf2crop, doflength(conf2crop)))
-phases = [collect(k * defocus) for k in [0, 1, 2, -2, -1]] #TODO #3 this should be automatized
+phases = [collect(k * defocus) for k in map(s -> parse(Int, s), [keys(conf2.diversity)...])] #TODO #3 this should be automatized
 # Crop the corresponding PSFs
 div_psf_crop = crop.(div_psf, cropw)
 save("psf_crop.png", Gray.(mosaicview(div_psf_crop; nrow=1, npad=5, fillvalue=1)))
@@ -276,8 +276,8 @@ showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2crop.mask)[1]
 sol = solve(pr, (DRAPparam(; β=0.5, keephistory=true, maxit=50), APparam(; maxit=50)))
 showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2crop.mask)[1]
 
-# Try to unwrap the phase
-ph = fftshift(angle.(sol[1][:, :, 1]))
+# Try to unwrap the phase (we subtract the first diversity)
+ph = phwrap(fftshift(angle.(sol[1][:, :, 1])) - phases[1])
 ph_u = unwrap_LS(ph, conf2crop.ap)
 fig, ax, hm = showarray(bboxview(ph_u .* conf2crop.mask))
 Colorbar(fig[1, 2], hm)
@@ -313,7 +313,7 @@ fig
 z10 = ZernikeBW(conf2, 10);
 defocus = 2π / 4 * z10(; n=2, m=0)
 defocus = ZonalPhase(throughfocus(conf2, doflength(conf2)))
-phases = [collect(k * defocus) for k in [0, 1, 2, -2, -1]] #TODO this should be automatized
+phases = [collect(k * defocus) for k in map(s -> parse(Int, s), [keys(conf2.diversity)...])] #TODO this should be automatized
 
 a = sqrt.(Float64.(conf2.ap))
 A = [sqrt.(collect(Float64, p)) for p in div_psf]
@@ -322,8 +322,8 @@ pr = PDPRproblem(a, A, phases)
 sol = solve(pr, (DRAPparam(; β=0.5, keephistory=true, maxit=50), APparam(; maxit=50)))
 showphasetight(fftshift(angle.(sol[1][:, :, 1])) .* conf2.mask)[1]
 
-# We again unwrap the phase
-ph = fftshift(angle.(sol[1][:, :, 1]))
+# We again unwrap the phase and subtract the first diversity
+ph = phwrap(fftshift(angle.(sol[1][:, :, 1])) - phases[1])
 ph_u = unwrap_LS(ph, conf2.ap)
 fig, ax, hm = showarray(bboxview(ph_u .* conf2.mask))
 ax.aspect = 1

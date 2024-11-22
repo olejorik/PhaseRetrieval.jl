@@ -82,6 +82,8 @@ function logrescale(array, α=5)
     return rescale(log10.(ret))
 end
 
+logrescale(a::Array{T}, args...) where {T<:Normed} = logrescale(Float64.(a), args...)
+
 "Wrap Phase"
 phwrap(x::AbstractFloat) = isnan(x) ? NaN : rem2pi(x, RoundNearest)
 # phwrap(::Val{NaN}) = NaN

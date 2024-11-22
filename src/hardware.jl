@@ -218,7 +218,7 @@ Imaging Sensor made with:
   f:	300.0 mm and
   D:	25.0 mm and
   Camera with
-	square pixel 5.2 μm,
+	pixel size 5.2 × 5.2 μm²,
 	(1280, 1024) frame and
 	8/8 bit/channel output.
 
@@ -228,7 +228,7 @@ Imaging Sensor made with:
   f:	300.0 mm and
   D:	10.0 mm and
   Camera with
-	square pixel 5.2 μm,
+	pixel size 5.2 × 5.2 μm²,
 	(1280, 1024) frame and
 	8/8 bit/channel output.
 
@@ -238,7 +238,7 @@ Imaging Sensor made with:
   f:	300.0 mm and
   D:	25.0 mm and
   Camera with
-	square pixel 5.2 μm,
+	pixel size 5.2 × 5.2 μm²,
 	(1280, 1024) frame and
 	8/8 bit/channel output.
 ```
