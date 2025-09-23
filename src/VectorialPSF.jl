@@ -7,6 +7,11 @@ Calculate σz from the values of the other cosines
 """
 σz(σx, σy) = sqrt(1 + 0im - σx^2 - σy^2) # convert to complex to allow complex sigmas
 
+"""
+    get_cosines(conf::SimConfig)
+
+Get direction cosines (σx, σy, σz) for the aperture from simulation configuration.
+"""
 function get_cosines(conf::SimConfig)
     ddom = conf.dualroi * (1 / focallength(conf))
     σx, σy = getranges(ddom)
@@ -14,6 +19,11 @@ function get_cosines(conf::SimConfig)
     return (σx=σx, σy=σy, σz=σs)
 end
 
+"""
+    get_polarization_magnitudes(conf::SimConfig)
+
+Calculate polarization field components (exx, eyx, ezx, exy, eyy, ezy) for vectorial diffraction theory.
+"""
 function get_polarization_magnitudes(conf::SimConfig)
     ddom = conf.dualroi * (1 / focallength(conf))
     inaperture = (!isnan).(conf.mask)
@@ -44,6 +54,11 @@ function get_polarization_magnitudes(conf::SimConfig)
     return (exx=exx, eyx=eyx, ezx=ezx, exy=exy, eyy=eyy, ezy=ezy)
 end
 
+"""
+    get_obliquity_factor(conf::SimConfig)
+
+Calculate obliquity correction factor for non-paraxial imaging systems.
+"""
 function get_obliquity_factor(conf::SimConfig)
     ddom = conf.dualroi * (1 / focallength(conf))
     inaperture = (!isnan).(conf.mask)
@@ -96,6 +111,11 @@ function incoherent_psf(array::Array)
     return ret
 end
 
+"""
+    _vectorial_sim_config(name::String, ims::ImagingSensor, λ::Float64, ::RandomPolarization)
+
+Create simulation configuration for vectorial PSF with random polarization.
+"""
 function _vectorial_sim_config(
     name::String, ims::ImagingSensor, λ::Float64, ::RandomPolarization
 )
@@ -109,6 +129,11 @@ function _vectorial_sim_config(
     return conf
 end
 
+"""
+    _vectorial_sim_config(name::String, ims::ImagingSensor, λ::Float64, p::LinearPolarization)
+
+Create simulation configuration for vectorial PSF with linear polarization at specified angle.
+"""
 function _vectorial_sim_config(
     name::String, ims::ImagingSensor, λ::Float64, p::LinearPolarization
 )
@@ -129,6 +154,11 @@ function _vectorial_sim_config(
     return conf
 end
 
+"""
+    vectorial_psf(c::SimConfig; kwargs...)
+
+Generate vectorial PSF accounting for polarization effects from simulation configuration.
+"""
 function vectorial_psf(c::SimConfig{T}; kwargs...) where {T}
     # focalfield = toimageplane(pupilfield(c), algtype(c))
     # return ret = c.ims.cam(focalfield, exposure, quantize, noise)
@@ -139,6 +169,11 @@ function vectorial_psf(c::SimConfig{T}; kwargs...) where {T}
     return c.ims.cam(incoherent_psf(pupilfield(c) .* c.modulation["vectorial"]); kwargs...)
 end
 
+"""
+    vectorial_diversed_psfs(c::SimConfig; kwargs...)
+
+Generate multiple vectorial PSFs with phase diversity for improved phase retrieval.
+"""
 function vectorial_diversed_psfs(c::SimConfig{T}; kwargs...) where {T}
     haskey(c.modulation, "vectorial") ||
         error("Config named `$(c.name)` is not initialised for vectorial simulation")
@@ -146,7 +181,7 @@ function vectorial_diversed_psfs(c::SimConfig{T}; kwargs...) where {T}
     div_fields =
     # vcat(
     # [pupilfield(c)],
-    [cis.(d) for d in values(c.diversity)]
+        [cis.(d) for d in values(c.diversity)]
     # )
     # return [
     #     c.ims.cam(toimageplane(f, algtype(c)), exposure, quantize, noise) for
@@ -159,12 +194,22 @@ function vectorial_diversed_psfs(c::SimConfig{T}; kwargs...) where {T}
     ]
 end
 
+"""
+    vectorial_coherent_psf(c::SimConfig)
+
+Return coherent vectorial PSF (complex field) without camera modeling.
+"""
 function vectorial_coherent_psf(c::SimConfig{T}) where {T}
     haskey(c.modulation, "vectorial") ||
         error("Config named `$(c.name)` is not initialised for vectorial simulation")
     return toimageplane(pupilfield(c) .* c.modulation["vectorial"])
 end
 
+"""
+    vectorial_diversed_coherent_psfs(c::SimConfig)
+
+Generate coherent vectorial PSFs with phase diversity (complex fields without camera modeling).
+"""
 function vectorial_diversed_coherent_psfs(c::SimConfig{T}) where {T}
     haskey(c.modulation, "vectorial") ||
         error("Config named `$(c.name)` is not initialised for vectorial simulation")
