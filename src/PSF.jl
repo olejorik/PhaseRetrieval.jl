@@ -197,8 +197,8 @@ end
 FixedExposure(conf::SimConfig) = FixedExposure(sum(conf.ap)^2)
 
 import PhaseBases: ZernikeBW, ModalPhase
-ZernikeBW(c::SimConfig{PSFMethods.Fourier}, order=10) =
-    ZernikeBW(c.dualroi, apdiameter(c), order)
+ZernikeBW(c::SimConfig{PSFMethods.Fourier}, order=10; kwargs...) =
+    ZernikeBW(c.dualroi, apdiameter(c), order; kwargs...)
 
 (ph::Phase)(c::SimConfig) = set_phase!(c, ph, "aberration")
 (ph::Phase)(c::SimConfig, phasenature::String) = set_phase!(c, ph, phasenature)

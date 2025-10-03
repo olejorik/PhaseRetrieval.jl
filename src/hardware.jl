@@ -303,6 +303,47 @@ focallength(len::ImagingLens) = len.focallength
 apdiameter(ims::ImagingSensor) = apdiameter(ims.lens)
 apdiameter(len::ImagingLens) = len.aperture
 
+"""
+    numericalaperture(lens::ImagingLens)
+    numericalaperture(sensor::ImagingSensor)
+
+Calculate the numerical aperture (NA) of an imaging lens or sensor.
+
+The numerical aperture is computed as:
+```
+NA = D/(2f)
+```
+where `D` is the aperture diameter and `f` is the focal length.
+
+# Definition and Physical Interpretation
+
+By "aperture" we mean the field distribution in the principal plane **before** the lens.
+The lens is assumed to satisfy the Abbe sine condition, ensuring that the relationship
+between the the coordinates in the principal plane before the lens and  the spatial frequency is linear. This definition is 
+consistent with the standard definition from  optics textbooks, where
+the numerical aperture characterizes the light-gathering ability and resolution limit
+of the optical system.
+
+For a lens satisfying the Abbe condition:
+- The aperture diameter `D` corresponds to the physical diameter of the entrance pupil
+- The numerical aperture determines the maximum spatial frequency that can be resolved
+- The relationship `sin(θ) = NA` holds, where `θ` is the half-angle of the maximum cone of light
+
+# Arguments
+- `lens::ImagingLens`: An imaging lens with focal length and aperture diameter
+- `sensor::ImagingSensor`: An imaging sensor containing a lens component
+
+# Returns
+- `Float64`: The numerical aperture (dimensionless)
+
+# Example
+```julia
+lens = ImagingLens(focallength=50mm, aperture=25mm)
+na = numericalaperture(lens)  # Returns 0.25
+```
+
+See also [`apdiameter`](@ref), [`focallength`](@ref).
+"""
 numericalaperture(len::ImagingLens) = apdiameter(len) / focallength(len) / 2
 numericalaperture(ims::ImagingSensor) = numericalaperture(ims.lens)
 
