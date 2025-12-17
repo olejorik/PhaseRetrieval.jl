@@ -19,13 +19,17 @@ import AlternatingProjections:
     tolerance,
     maxit,
     keephistory,
-    snapshots # these we will need to change
+    snapshots, # these we will need to change
+    errhist,
+    disthist,
+    distgthist
 using AlternatingProjections
 
 export SHdiversity
 export psf, subpsf, logrescale
 export removepiston, removetiptilt, twinphase
 export gaussian_apodization
+export errhist, disthist, distgthist
 
 # export Linear
 
