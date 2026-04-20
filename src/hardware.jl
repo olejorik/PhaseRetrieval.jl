@@ -1,4 +1,5 @@
-export hwConfig, SimConfig, ImagingSensor, ImagingLens, CameraChip, roi, diaphragm, aperture
+export hwConfig,
+    SimConfig, ImagingSensor, ImagingLens, CameraChip, roi, diaphragm, aperture, binning
 export camerasdict, lensesdict, m, mm, um, μm, nm
 export focaldistance, focallength, apdiameter
 
@@ -101,6 +102,14 @@ end # sometimes this is needed
 roi(cam::CameraChip, dims::Integer) = roi(cam, (dims, dims))
 # roi(cam::CameraChip, dims::Tuple) = CameraChip(cam.pixelsize, min.(cam.imagesize, dims),cam.bitdepth, cam.channelbitdepth) # correct approach if we want to limit roi to the hardware
 
+function binning(cam::CameraChip, n::Integer)
+    return CameraChip(
+        cam.pixelsize .* n, cam.imagesize .÷ n, cam.bitdepth, cam.channelbitdepth
+    )
+end # sometimes this is needed
+
+
+
 """
     storagetype[(bitdepth,channelbitdepth)]
 
@@ -136,7 +145,7 @@ end
 """
     ImagingLens(;focallength, aperture)
 
-Create fixed focal length lens with focus = `focallength` and aperture dimater `aperture`.
+Create fixed focal length lens with focus = `focallength` mm and aperture diameter of `aperture` mm.
 
 Arguments can be speciefied in any order.
 
@@ -286,6 +295,22 @@ function roi(ims::ImagingSensor, dims)
         ims.γ,
     )
 end
+
+
+function binning(ims::ImagingSensor, n::Integer)
+    return ImagingSensor(
+        ims.lens,
+        binning(ims.cam, n),
+        ims.focal_distance,
+        ims.lensorigin,
+        ims.α,
+        ims.β,
+        ims.γ,
+    )
+end
+
+
+
 function focaldistance(ims::ImagingSensor, z::Float64)
     return ImagingSensor(ims.lens, ims.cam, z, ims.lensorigin, ims.α, ims.β, ims.γ)
 end
@@ -319,7 +344,7 @@ where `D` is the aperture diameter and `f` is the focal length.
 
 By "aperture" we mean the field distribution in the principal plane **before** the lens.
 The lens is assumed to satisfy the Abbe sine condition, ensuring that the relationship
-between the the coordinates in the principal plane before the lens and  the spatial frequency is linear. This definition is 
+between the the coordinates in the principal plane before the lens and  the spatial frequency is linear. This definition is
 consistent with the standard definition from  optics textbooks, where
 the numerical aperture characterizes the light-gathering ability and resolution limit
 of the optical system.

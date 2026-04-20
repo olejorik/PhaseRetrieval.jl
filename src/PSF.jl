@@ -125,6 +125,15 @@ function SimConfig{PSFMethods.Fourier}(name::String, ims::ImagingSensor, λ::Flo
     )
 end
 
+# Create SimConfig from the hardware configuration
+SimConfig(hw::hwConfig; name="") = SimConfig(
+    name,
+    ImagingSensor(;
+        lens=ImagingLens(; aperture=hw.d * mm, focallength=hw.f * mm), cam=hw.cam
+    ),
+    hw.λ * mm,
+)
+
 # Pretty printing
 function show(io::IO, x::SimConfig)
     return print(
